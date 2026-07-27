@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: alagoas-edu-backend
+    env: node
+    region: oregon
+    buildCommand: cd backend && npm install && npx prisma db push && npm run build
+    startCommand: cd backend && npm run start
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

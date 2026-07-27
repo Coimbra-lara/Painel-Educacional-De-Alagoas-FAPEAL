@@ -1,0 +1,25 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Medida {
+  id          Int    @id @default(autoincrement())
+  co_mun      String
+  no_mun      String
+  ano         Int
+  fonte       String
+  variavel    String
+  ensino_rede String
+  ensino_tipo String
+  valor       Float
+
+  @@index([ano, variavel, ensino_rede, ensino_tipo], name: "idx_medidas_agregacao")
+  @@index([co_mun, ano], name: "idx_medidas_municipio_ano")
+  @@index([variavel], name: "idx_medidas_variavel")
+  @@map("medidas")
+}

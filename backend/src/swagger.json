@@ -1,0 +1,74 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API de Indicadores Educacionais — Alagoas",
+    "version": "1.0.0",
+    "description": "API REST para upload de CSVs educacionais, agregações em banco de dados e alimentação do dashboard de Alagoas."
+  },
+  "paths": {
+    "/api/upload": {
+      "post": {
+        "summary": "Upload e parsing em lote de CSV educacional",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Relatório de importação" },
+          "400": { "description": "CSV ou cabeçalho inválido" }
+        }
+      }
+    },
+    "/api/filtros": {
+      "get": {
+        "summary": "Opções dinâmicas para os filtros da aplicação",
+        "responses": {
+          "200": { "description": "Lista de municípios, anos, redes, etapas e variáveis" }
+        }
+      }
+    },
+    "/api/indicadores": {
+      "get": {
+        "summary": "Cards de indicadores calculados e agregados",
+        "parameters": [
+          { "name": "municipio", "in": "query", "schema": { "type": "string" } },
+          { "name": "anoInicio", "in": "query", "schema": { "type": "integer" } },
+          { "name": "anoFim", "in": "query", "schema": { "type": "integer" } },
+          { "name": "rede", "in": "query", "schema": { "type": "string" } },
+          { "name": "etapa", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Métricas consolidadas" } }
+      }
+    },
+    "/api/series": {
+      "get": {
+        "summary": "Série temporal por ano para gráficos de evolução",
+        "responses": { "200": { "description": "Array de pontos por ano" } }
+      }
+    },
+    "/api/ranking": {
+      "get": {
+        "summary": "Ranking comparativo de municípios",
+        "responses": { "200": { "description": "Municípios ordenados por indicador" } }
+      }
+    },
+    "/api/dados": {
+      "get": {
+        "summary": "Tabela paginada no servidor",
+        "responses": { "200": { "description": "Dados paginados" } }
+      }
+    }
+  }
+}
