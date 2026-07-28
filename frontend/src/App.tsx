@@ -12,6 +12,7 @@ import {
   fetchSeries,
   fetchRanking,
   fetchMapa,
+  fetchDistribuicao,
   fetchTabela,
 } from './services/api.js';
 import {
@@ -20,6 +21,7 @@ import {
   IndicadoresData,
   SerieItem,
   RankingItem,
+  DistribuicaoItem,
   TabelaData,
 } from './types/index.js';
 import './index.css';
@@ -43,9 +45,11 @@ export function App() {
     variavel: 'Matrícula',
   });
 
+  const [visao, setVisao] = useState<'rede' | 'etapa'>('rede');
   const [indicadores, setIndicadores] = useState<IndicadoresData | null>(null);
   const [series, setSeries] = useState<SerieItem[]>([]);
   const [ranking, setRanking] = useState<RankingItem[]>([]);
+  const [distribuicao, setDistribuicao] = useState<DistribuicaoItem[]>([]);
   const [mapaData, setMapaData] = useState<RankingItem[]>([]);
   const [tabela, setTabela] = useState<TabelaData | null>(null);
 
@@ -67,23 +71,25 @@ export function App() {
     }
   }, []);
 
-  // Load dashboard data whenever filters change
+  // Load dashboard data whenever filters or visao change
   const loadDashboardData = useCallback(async () => {
     setErrorMsg(null);
     setLoadingIndicadores(true);
     setLoadingCharts(true);
 
     try {
-      const [indData, seriesData, rankingData, mapaRes] = await Promise.all([
+      const [indData, seriesData, rankingData, distData, mapaRes] = await Promise.all([
         fetchIndicadores(filters),
         fetchSeries(filters),
         fetchRanking(filters, 10),
+        fetchDistribuicao(filters, visao),
         fetchMapa(filters),
       ]);
 
       setIndicadores(indData);
       setSeries(seriesData);
       setRanking(rankingData);
+      setDistribuicao(distData);
       setMapaData(mapaRes);
     } catch (err: any) {
       console.error('Erro ao carregar dados do dashboard:', err);
@@ -92,7 +98,7 @@ export function App() {
       setLoadingIndicadores(false);
       setLoadingCharts(false);
     }
-  }, [filters]);
+  }, [filters, visao]);
 
   // Load paginated table
   const loadTabelaData = useCallback(async () => {
@@ -175,8 +181,11 @@ export function App() {
         <ChartsSection
           series={series}
           ranking={ranking}
+          distribuicao={distribuicao}
           variavel={filters.variavel}
           loading={loadingCharts}
+          visao={visao}
+          onVisaoChange={setVisao}
         />
 
         <AlagoasMap data={mapaData} variavel={filters.variavel} loading={loadingCharts} />

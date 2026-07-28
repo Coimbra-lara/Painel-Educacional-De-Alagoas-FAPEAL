@@ -11,26 +11,40 @@ import {
   Bar,
   Cell,
 } from 'recharts';
-import { SerieItem, RankingItem } from '../types/index.js';
+import { SerieItem, RankingItem, DistribuicaoItem } from '../types/index.js';
 import { formatNumber, formatPercent } from '../utils/formatters.js';
+import { Info, Layers } from 'lucide-react';
 
 interface ChartsSectionProps {
   series: SerieItem[];
   ranking: RankingItem[];
+  distribuicao: DistribuicaoItem[];
   variavel: string;
   loading: boolean;
+  visao: 'rede' | 'etapa';
+  onVisaoChange: (v: 'rede' | 'etapa') => void;
 }
+
+const VARIAVEIS_CENSO_DEMOGRAFICO = [
+  'Taxa de Analfabetismo',
+  'Taxa de Alfabetização',
+  'Pessoas Total',
+  'Pessoas Alfabetizadas',
+];
 
 export const ChartsSection: React.FC<ChartsSectionProps> = ({
   series,
   ranking,
+  distribuicao,
   variavel,
   loading,
+  visao,
+  onVisaoChange,
 }) => {
   const isRate = variavel.startsWith('Taxa');
+  const isCensoDemografico = VARIAVEIS_CENSO_DEMOGRAFICO.includes(variavel);
 
   // Format Y-axis ticks with compact notation (e.g. 250k, 1.5M)
-  // NOT pt-BR format, which shows "250.000" that looks like a decimal on charts
   const formatYTick = (val: number): string => {
     if (isRate) return `${val}%`;
     if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
@@ -42,16 +56,16 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse bg-slate-800"></div>
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse bg-slate-800"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
+        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
+        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
       </div>
     );
   }
 
   const BAR_COLORS = [
     '#0284c7',
-    '#0369a1',
     '#0ea5e9',
     '#38bdf8',
     '#6366f1',
@@ -63,16 +77,16 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* 1. Série Temporal */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl">
+      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-white">Evolução Temporal ({variavel})</h3>
             <p className="text-xs text-slate-400">Série histórica anual dos dados agregados</p>
           </div>
-          <span className="text-xs font-mono px-2.5 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg">
-            Série Histórica
+          <span className="text-[11px] font-mono px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg">
+            Histórico
           </span>
         </div>
 
@@ -91,10 +105,10 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="ano" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="ano" stroke="#94a3b8" tick={{ fontSize: 11 }} />
                 <YAxis
                   stroke="#94a3b8"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
                   tickFormatter={formatYTick}
                 />
                 <Tooltip
@@ -126,15 +140,15 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
         )}
       </div>
 
-      {/* 2. Ranking Comparativo */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl">
+      {/* 2. Ranking Comparativo entre Municípios */}
+      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-white">Ranking de Municípios</h3>
             <p className="text-xs text-slate-400">Top 10 municípios no recorte selecionado</p>
           </div>
-          <span className="text-xs font-mono px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
-            Comparativo IBGE
+          <span className="text-[11px] font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+            Comparativo
           </span>
         </div>
 
@@ -145,7 +159,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
         ) : (
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ranking} layout="vertical" margin={{ top: 5, right: 10, left: 40, bottom: 5 }}>
+              <BarChart data={ranking} layout="vertical" margin={{ top: 5, right: 10, left: 35, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis
                   type="number"
@@ -158,7 +172,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
                   dataKey="no_mun"
                   stroke="#94a3b8"
                   tick={{ fontSize: 11 }}
-                  width={90}
+                  width={85}
                 />
                 <Tooltip
                   contentStyle={{
@@ -175,6 +189,102 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
                 <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
                   {ranking.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* 3. TERCEIRO GRÁFICO: Quebra por Rede ou Etapa de Ensino (Obrigatório) */}
+      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span>Quebra por {visao === 'rede' ? 'Rede' : 'Etapa'}</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              {visao === 'rede' ? 'Estadual, Municipal, Federal e Privada' : 'Distribuição entre etapas educacionais'}
+            </p>
+          </div>
+
+          {/* Toggle de Alternância Rede vs Etapa */}
+          {!isCensoDemografico && (
+            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700/80 text-xs">
+              <button
+                onClick={() => onVisaoChange('rede')}
+                className={`px-2.5 py-1 rounded-lg font-medium transition ${
+                  visao === 'rede'
+                    ? 'bg-sky-500 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Rede
+              </button>
+              <button
+                onClick={() => onVisaoChange('etapa')}
+                className={`px-2.5 py-1 rounded-lg font-medium transition ${
+                  visao === 'etapa'
+                    ? 'bg-sky-500 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Etapa
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isCensoDemografico ? (
+          <div className="h-64 flex flex-col items-center justify-center p-4 text-center bg-slate-900/40 rounded-xl border border-slate-700/30">
+            <Info className="w-7 h-7 text-amber-400 mb-2" />
+            <span className="text-xs font-semibold text-slate-200">Não aplicável a esta variável</span>
+            <span className="text-[11px] text-slate-400 mt-1 max-w-xs leading-relaxed">
+              O indicador <strong>"{variavel}"</strong> pertence ao Censo Demográfico e não possui desagregação por rede ou etapa de ensino.
+            </span>
+          </div>
+        ) : distribuicao.length === 0 ? (
+          <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm">
+            Sem dados de {visao === 'rede' ? 'rede' : 'etapa'} para os filtros selecionados
+          </div>
+        ) : (
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={distribuicao}
+                layout={visao === 'etapa' ? 'vertical' : 'horizontal'}
+                margin={visao === 'etapa' ? { top: 5, right: 10, left: 55, bottom: 5 } : { top: 10, right: 10, left: -10, bottom: 25 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                {visao === 'etapa' ? (
+                  <>
+                    <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 10 }} tickFormatter={formatYTick} />
+                    <YAxis type="category" dataKey="categoria" stroke="#94a3b8" tick={{ fontSize: 10 }} width={110} />
+                  </>
+                ) : (
+                  <>
+                    <XAxis dataKey="categoria" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={formatYTick} />
+                  </>
+                )}
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '12px',
+                    color: '#f8fafc',
+                  }}
+                  formatter={(val: any) => [
+                    isRate ? formatPercent(val) : formatNumber(val),
+                    variavel,
+                  ]}
+                  labelFormatter={(lbl) => `${visao === 'rede' ? 'Rede' : 'Etapa'}: ${lbl}`}
+                />
+                <Bar dataKey="valor" radius={visao === 'etapa' ? [0, 6, 6, 0] : [6, 6, 0, 0]}>
+                  {distribuicao.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={BAR_COLORS[(index + 2) % BAR_COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>

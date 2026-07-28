@@ -112,4 +112,33 @@ describe('Seção 10: Testes de Validação Obrigatória de Dados Educacionais',
     const invalidHeaderCsv = Readable.from(['coluna1,coluna2,coluna3\n1,2,3']);
     await expect(parseAndInsertCsvStream(invalidHeaderCsv, false)).rejects.toThrow('Cabeçalho CSV inválido');
   });
+
+  it('9. getMapaData/getRanking deve retornar o valor exato do ano filtrado (2022: Maceió 8.42%, Piaçabuçu 22.83%)', async () => {
+    const { getMapaData } = await import('../src/repository/medidasRepository.js');
+    const mapa2022 = await getMapaData({
+      variavel: 'Taxa de Analfabetismo',
+      anoInicio: 2022,
+    });
+
+    const maceio = mapa2022.find((m) => m.no_mun === 'Maceió');
+    const piacabucu = mapa2022.find((m) => m.no_mun === 'Piaçabuçu');
+
+    expect(maceio?.valor).toBe(8.42);
+    expect(piacabucu?.valor).toBe(22.83);
+  });
+
+  it('10. getDistribuicao por rede deve retornar apenas redes granulares sem sobreposição', async () => {
+    const { getDistribuicao } = await import('../src/repository/medidasRepository.js');
+    const distRede = await getDistribuicao({
+      variavel: 'Matrícula',
+      anoInicio: 2023,
+      visao: 'rede',
+    });
+
+    const categorias = distRede.map((d) => d.categoria);
+    expect(categorias).toContain('Estadual');
+    expect(categorias).toContain('Municipal');
+    expect(categorias).not.toContain('Total');
+    expect(categorias).not.toContain('Pública');
+  });
 });

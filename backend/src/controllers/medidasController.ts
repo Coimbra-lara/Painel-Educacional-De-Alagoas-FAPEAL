@@ -8,6 +8,7 @@ import {
   getSeries,
   getRanking,
   getMapaData,
+  getDistribuicao,
   getTabelaDados,
 } from '../repository/medidasRepository';
 
@@ -26,7 +27,7 @@ const upload = multer({
 
 // Helper for parsing multi-value or single query parameters
 function parseQueryParams(req: Request) {
-  const { municipio, anoInicio, anoFim, rede, etapa, variavel, pagina, tamanho, limite } = req.query;
+  const { municipio, anoInicio, anoFim, rede, etapa, variavel, visao, pagina, tamanho, limite } = req.query;
 
   let municipios: string[] | undefined;
   if (municipio) {
@@ -44,6 +45,7 @@ function parseQueryParams(req: Request) {
     rede: rede && rede !== 'Todos' ? String(rede) : undefined,
     etapa: etapa && etapa !== 'Todas' ? String(etapa) : undefined,
     variavel: variavel ? String(variavel) : undefined,
+    visao: visao === 'etapa' ? ('etapa' as const) : ('rede' as const),
     pagina: pagina ? parseInt(String(pagina), 10) : 1,
     tamanho: tamanho ? parseInt(String(tamanho), 10) : 10,
     limite: limite ? parseInt(String(limite), 10) : 10,
@@ -122,6 +124,18 @@ medidasRouter.get('/mapa', async (req: Request, res: Response, next: NextFunctio
     const variavel = params.variavel || 'Matrícula';
     const mapa = await getMapaData({ ...params, variavel });
     res.json(mapa);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/distribuicao
+medidasRouter.get('/distribuicao', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const params = parseQueryParams(req);
+    const variavel = params.variavel || 'Matrícula';
+    const distribuicao = await getDistribuicao({ ...params, variavel });
+    res.json(distribuicao);
   } catch (error) {
     next(error);
   }

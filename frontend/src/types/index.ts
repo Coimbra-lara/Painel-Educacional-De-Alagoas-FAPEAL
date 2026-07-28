@@ -41,6 +41,11 @@ export interface RankingItem {
   valor: number;
 }
 
+export interface DistribuicaoItem {
+  categoria: string;
+  valor: number;
+}
+
 export interface MedidaItem {
   id: number;
   co_mun: string;

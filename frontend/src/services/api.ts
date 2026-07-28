@@ -5,6 +5,7 @@ import {
   IndicadoresData,
   SerieItem,
   RankingItem,
+  DistribuicaoItem,
   TabelaData,
   UploadReport,
 } from '../types/index.js';
@@ -62,10 +63,29 @@ export async function fetchMapa(filters: FilterState): Promise<RankingItem[]> {
   const { data } = await axios.get<RankingItem[]>(`${API_BASE}/mapa`, {
     params: {
       variavel: filters.variavel,
+      municipio: filters.municipios.join(','),
       anoInicio: filters.anoInicio,
       anoFim: filters.anoFim,
       rede: filters.rede,
       etapa: filters.etapa,
+    },
+  });
+  return data;
+}
+
+export async function fetchDistribuicao(
+  filters: FilterState,
+  visao: 'rede' | 'etapa' = 'rede'
+): Promise<DistribuicaoItem[]> {
+  const { data } = await axios.get<DistribuicaoItem[]>(`${API_BASE}/distribuicao`, {
+    params: {
+      variavel: filters.variavel,
+      municipio: filters.municipios.join(','),
+      anoInicio: filters.anoInicio,
+      anoFim: filters.anoFim,
+      rede: filters.rede,
+      etapa: filters.etapa,
+      visao,
     },
   });
   return data;

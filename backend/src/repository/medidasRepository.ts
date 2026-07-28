@@ -3,6 +3,7 @@ import { ehVariavelCensoDemografico, REDE_CENSO_DEMOGRAFICO, ETAPA_CENSO_DEMOGRA
 
 export interface FilterParams {
   municipios?: string[];
+  ano?: number;
   anoInicio?: number;
   anoFim?: number;
   rede?: string;
@@ -77,6 +78,11 @@ export async function getFiltros() {
 }
 
 
+export interface DistribuicaoItem {
+  categoria: string;
+  valor: number;
+}
+
 function buildWhereClause(params: FilterParams) {
   const where: any = {};
 
@@ -84,10 +90,23 @@ function buildWhereClause(params: FilterParams) {
     where.co_mun = { in: params.municipios };
   }
 
-  if (params.anoInicio !== undefined || params.anoFim !== undefined) {
-    where.ano = {};
-    if (params.anoInicio !== undefined) where.ano.gte = params.anoInicio;
-    if (params.anoFim !== undefined) where.ano.lte = params.anoFim;
+  if (params.ano !== undefined) {
+    where.ano = params.ano;
+  } else if (params.anoInicio !== undefined || params.anoFim !== undefined) {
+    if (params.anoInicio !== undefined && params.anoFim !== undefined) {
+      if (params.anoInicio === params.anoFim) {
+        where.ano = params.anoInicio;
+      } else {
+        where.ano = {
+          gte: Math.min(params.anoInicio, params.anoFim),
+          lte: Math.max(params.anoInicio, params.anoFim),
+        };
+      }
+    } else if (params.anoInicio !== undefined) {
+      where.ano = params.anoInicio;
+    } else if (params.anoFim !== undefined) {
+      where.ano = params.anoFim;
+    }
   }
 
   if (params.variavel) {
@@ -335,6 +354,18 @@ export async function getRanking(
 ): Promise<RankingItem[]> {
   const whereBase = buildWhereClause(params);
 
+  // Se nenhum ano foi especificado nos filtros, escolhe o ano mais recente disponível
+  if (whereBase.ano === undefined) {
+    const latest = await prisma.medida.findFirst({
+      where: { variavel: params.variavel },
+      orderBy: { ano: 'desc' },
+      select: { ano: true },
+    });
+    if (latest) {
+      whereBase.ano = latest.ano;
+    }
+  }
+
   // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
   // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
   if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
@@ -378,6 +409,105 @@ export async function getRanking(
 export async function getMapaData(params: FilterParams & { variavel: string }): Promise<RankingItem[]> {
   // Similar to ranking but returns all municipalities for choropleth mapping
   return getRanking({ ...params, limite: 200 });
+}
+
+export async function getDistribuicao(
+  params: FilterParams & { visao?: 'rede' | 'etapa' }
+): Promise<DistribuicaoItem[]> {
+  const variavel = params.variavel || 'Matrícula';
+
+  if (ehVariavelCensoDemografico(variavel)) {
+    return [];
+  }
+
+  const visao = params.visao || 'rede';
+  const whereBase = buildWhereClause(params);
+
+  // Se nenhum ano foi especificado nos filtros, usa o ano mais recente
+  if (whereBase.ano === undefined) {
+    const latest = await prisma.medida.findFirst({
+      where: { variavel },
+      orderBy: { ano: 'desc' },
+      select: { ano: true },
+    });
+    if (latest) {
+      whereBase.ano = latest.ano;
+    }
+  }
+
+  const isRate = variavel.startsWith('Taxa');
+
+  if (visao === 'rede') {
+    // Redes granulares sem sobreposição (ignora 'Total' e 'Pública')
+    const granularRedes = ['Estadual', 'Municipal', 'Federal', 'Privada'];
+    const whereRede = {
+      ...whereBase,
+      ensino_rede: { in: granularRedes },
+    };
+
+    const rows = await prisma.medida.findMany({
+      where: whereRede,
+      select: { ensino_rede: true, valor: true },
+    });
+
+    const mapRede = new Map<string, { sum: number; count: number }>();
+    for (const r of rows) {
+      if (!mapRede.has(r.ensino_rede)) {
+        mapRede.set(r.ensino_rede, { sum: 0, count: 0 });
+      }
+      const item = mapRede.get(r.ensino_rede)!;
+      item.sum += r.valor;
+      item.count += 1;
+    }
+
+    const result: DistribuicaoItem[] = [];
+    for (const redeName of granularRedes) {
+      const data = mapRede.get(redeName);
+      if (data && data.count > 0) {
+        const val = isRate ? data.sum / data.count : data.sum;
+        result.push({
+          categoria: redeName,
+          valor: Number(val.toFixed(2)),
+        });
+      }
+    }
+    return result;
+  } else {
+    // Visão por Etapa
+    const whereEtapa = {
+      ...whereBase,
+      ensino_rede: params.rede || 'Total',
+    };
+
+    const rows = await prisma.medida.findMany({
+      where: whereEtapa,
+      select: { ensino_tipo: true, valor: true },
+    });
+
+    const mapEtapa = new Map<string, { sum: number; count: number }>();
+    for (const r of rows) {
+      if (!mapEtapa.has(r.ensino_tipo)) {
+        mapEtapa.set(r.ensino_tipo, { sum: 0, count: 0 });
+      }
+      const item = mapEtapa.get(r.ensino_tipo)!;
+      item.sum += r.valor;
+      item.count += 1;
+    }
+
+    const result: DistribuicaoItem[] = [];
+    for (const [etapaName, data] of mapEtapa.entries()) {
+      if (data.count > 0) {
+        const val = isRate ? data.sum / data.count : data.sum;
+        result.push({
+          categoria: etapaName,
+          valor: Number(val.toFixed(2)),
+        });
+      }
+    }
+
+    result.sort((a, b) => b.valor - a.valor);
+    return result;
+  }
 }
 
 export async function getTabelaDados(
