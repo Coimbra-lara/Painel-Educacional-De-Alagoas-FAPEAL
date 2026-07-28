@@ -4,7 +4,6 @@ const path = require('path');
 const schemaPath = path.join(__dirname, '../prisma/schema.prisma');
 let schema = fs.readFileSync(schemaPath, 'utf8');
 
-// Load environment variables from .env if present
 const envPath = path.join(__dirname, '../.env');
 let dbUrl = process.env.DATABASE_URL;
 
@@ -16,7 +15,11 @@ if (!dbUrl && fs.existsSync(envPath)) {
   }
 }
 
-dbUrl = dbUrl || 'file:./dev.db';
+if (!dbUrl) {
+  dbUrl = 'file:./dev.db';
+  fs.writeFileSync(envPath, `PORT=3001\nDATABASE_URL="file:./dev.db"\n`);
+  console.log('[Prisma Prep] Created default backend/.env with DATABASE_URL="file:./dev.db"');
+}
 
 const isPostgres = dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://');
 const targetProvider = isPostgres ? 'postgresql' : 'sqlite';
