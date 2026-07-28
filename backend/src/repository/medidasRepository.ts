@@ -1,4 +1,5 @@
 import { prisma } from '../services/db';
+import { ehVariavelCensoDemografico, REDE_CENSO_DEMOGRAFICO, ETAPA_CENSO_DEMOGRAFICO } from '../services/censoDemografico';
 
 export interface FilterParams {
   municipios?: string[];
@@ -89,16 +90,22 @@ function buildWhereClause(params: FilterParams) {
     if (params.anoFim !== undefined) where.ano.lte = params.anoFim;
   }
 
-  if (params.rede) {
-    where.ensino_rede = params.rede;
-  }
-
-  if (params.etapa) {
-    where.ensino_tipo = params.etapa;
-  }
-
   if (params.variavel) {
     where.variavel = params.variavel;
+
+    // Variáveis do censo_demografico têm rede/etapa fixas e diferentes das variáveis
+    // educacionais. Ignorar quaisquer filtros de rede/etapa passados pelo usuário e
+    // forçar os únicos valores presentes no CSV para essas variáveis.
+    if (ehVariavelCensoDemografico(params.variavel)) {
+      where.ensino_rede = REDE_CENSO_DEMOGRAFICO;
+      where.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
+    } else {
+      if (params.rede) where.ensino_rede = params.rede;
+      if (params.etapa) where.ensino_tipo = params.etapa;
+    }
+  } else {
+    if (params.rede) where.ensino_rede = params.rede;
+    if (params.etapa) where.ensino_tipo = params.etapa;
   }
 
   return where;
@@ -274,7 +281,8 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
 export async function getSeries(params: FilterParams & { variavel: string }): Promise<SerieItem[]> {
   const whereBase = buildWhereClause(params);
 
-  // If variavel is Matrícula or Escolas, use default rede = 'Total' if not specified
+  // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
+  // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
   if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
     whereBase.ensino_rede = 'Total';
   }
@@ -327,6 +335,8 @@ export async function getRanking(
 ): Promise<RankingItem[]> {
   const whereBase = buildWhereClause(params);
 
+  // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
+  // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
   if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
     whereBase.ensino_rede = 'Total';
   }
