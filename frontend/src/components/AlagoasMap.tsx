@@ -6,15 +6,17 @@ import { MapPin, Info } from 'lucide-react';
 interface AlagoasMapProps {
   data: RankingItem[];
   variavel: string;
+  etapa?: string;
   loading: boolean;
 }
 
-export const AlagoasMap: React.FC<AlagoasMapProps> = ({ data, variavel, loading }) => {
+export const AlagoasMap: React.FC<AlagoasMapProps> = ({ data, variavel, etapa, loading }) => {
   const [geoJson, setGeoJson] = useState<any | null>(null);
   const [fetchError, setFetchError] = useState<boolean>(false);
   const [hoveredMun, setHoveredMun] = useState<{ no_mun: string; co_mun: string; valor: number | null } | null>(null);
 
   const isRate = variavel.startsWith('Taxa');
+  const isEscolasSemEtapa = variavel === 'Escolas' && (!etapa || etapa === 'Todas' || etapa === 'Todos');
 
   // Fetch GeoJSON from IBGE Mesh API for Alagoas (UF 27) with clean degradation
   useEffect(() => {
@@ -143,6 +145,12 @@ export const AlagoasMap: React.FC<AlagoasMapProps> = ({ data, variavel, loading 
           <p className="text-xs text-slate-400">
             Distribuição geográfica por município via Malha IBGE (Join por Código IBGE de 7 dígitos)
           </p>
+          {isEscolasSemEtapa && (
+            <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span>Valores somados por etapa representam ofertas de ensino, não escolas únicas</span>
+            </p>
+          )}
         </div>
 
         {hoveredMun && (

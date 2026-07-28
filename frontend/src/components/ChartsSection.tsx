@@ -20,6 +20,7 @@ interface ChartsSectionProps {
   ranking: RankingItem[];
   distribuicao: DistribuicaoItem[];
   variavel: string;
+  etapa?: string;
   loading: boolean;
   visao: 'rede' | 'etapa';
   onVisaoChange: (v: 'rede' | 'etapa') => void;
@@ -37,12 +38,14 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
   ranking,
   distribuicao,
   variavel,
+  etapa,
   loading,
   visao,
   onVisaoChange,
 }) => {
   const isRate = variavel.startsWith('Taxa');
   const isCensoDemografico = VARIAVEIS_CENSO_DEMOGRAFICO.includes(variavel);
+  const isEscolasSemEtapa = variavel === 'Escolas' && (!etapa || etapa === 'Todas' || etapa === 'Todos');
 
   // Format Y-axis ticks with compact notation (e.g. 250k, 1.5M)
   const formatYTick = (val: number): string => {
@@ -80,12 +83,18 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* 1. Série Temporal */}
       <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-white">Evolução Temporal ({variavel})</h3>
             <p className="text-xs text-slate-400">Série histórica anual dos dados agregados</p>
+            {isEscolasSemEtapa && (
+              <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 shrink-0" />
+                <span>Valores somados por etapa representam ofertas de ensino, não escolas únicas</span>
+              </p>
+            )}
           </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg">
+          <span className="text-[11px] font-mono px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg shrink-0">
             Histórico
           </span>
         </div>
@@ -142,12 +151,18 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
 
       {/* 2. Ranking Comparativo entre Municípios */}
       <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-white">Ranking de Municípios</h3>
             <p className="text-xs text-slate-400">Top 10 municípios no recorte selecionado</p>
+            {isEscolasSemEtapa && (
+              <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 shrink-0" />
+                <span>Valores somados por etapa representam ofertas de ensino, não escolas únicas</span>
+              </p>
+            )}
           </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+          <span className="text-[11px] font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg shrink-0">
             Comparativo
           </span>
         </div>

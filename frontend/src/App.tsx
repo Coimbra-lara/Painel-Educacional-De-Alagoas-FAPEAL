@@ -183,12 +183,18 @@ export function App() {
           ranking={ranking}
           distribuicao={distribuicao}
           variavel={filters.variavel}
+          etapa={filters.etapa}
           loading={loadingCharts}
           visao={visao}
           onVisaoChange={setVisao}
         />
 
-        <AlagoasMap data={mapaData} variavel={filters.variavel} loading={loadingCharts} />
+        <AlagoasMap
+          data={mapaData}
+          variavel={filters.variavel}
+          etapa={filters.etapa}
+          loading={loadingCharts}
+        />
 
         <DataTable
           data={tabela}
