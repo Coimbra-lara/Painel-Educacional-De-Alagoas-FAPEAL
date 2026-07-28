@@ -33,7 +33,7 @@ export function App() {
     anos: [],
     redes: [],
     etapas: [],
-    variaveis: ['Matrícula', 'Escolas', 'Taxa de Aprovação', 'Taxa de Abandono', 'Taxa de Analfabetismo'],
+    variaveis: [],
   });
 
   const [filters, setFilters] = useState<FilterState>({
@@ -61,11 +61,22 @@ export function App() {
   const [loadingTabela, setLoadingTabela] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Load available filters dynamically
+  // Load available filters dynamically from /api/filtros — all lists come from the database.
+  // After loading, if the currently selected variavel is not in the returned list,
+  // default to the first available variable.
   const loadOptions = useCallback(async () => {
     try {
       const opts = await fetchFiltros();
       setFiltrosOptions(opts);
+      // Sync active variavel: if the current selection is missing from the bank,
+      // pick the first one returned (keeps the UI consistent with available data).
+      if (opts.variaveis.length > 0) {
+        setFilters((prev) =>
+          opts.variaveis.includes(prev.variavel)
+            ? prev
+            : { ...prev, variavel: opts.variaveis[0] }
+        );
+      }
     } catch (err: any) {
       console.warn('Backend sem dados iniciais. Faça upload do CSV de amostra.');
     }
@@ -137,7 +148,8 @@ export function App() {
       anoFim: undefined,
       rede: undefined,
       etapa: undefined,
-      variavel: 'Matrícula',
+      // Default to first variable from the bank, falling back to 'Matrícula' if list is empty
+      variavel: filtrosOptions.variaveis[0] ?? 'Matrícula',
     });
     setPagina(1);
   };
