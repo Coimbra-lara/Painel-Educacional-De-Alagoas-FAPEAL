@@ -10,6 +10,7 @@ import {
   getMapaData,
   getDistribuicao,
   getTabelaDados,
+  invalidarCacheAnos,
 } from '../repository/medidasRepository';
 
 export const medidasRouter = Router();
@@ -64,6 +65,9 @@ medidasRouter.post(
 
       const stream = Readable.from(req.file.buffer);
       const report = await parseAndInsertCsvStream(stream, true);
+
+      // Invalida cache de anos após nova importação
+      invalidarCacheAnos();
 
       return res.status(200).json(report);
     } catch (error: any) {
