@@ -31,8 +31,8 @@ jobs:
       - name: Backend - Prisma Generate & Push Schema
         run: |
           cd backend
-          npx prisma generate
-          npx prisma db push
+          npm run prisma:generate
+          npm run prisma:push
 
       - name: Backend - Run Automated Test Suite (Section 10)
         run: |

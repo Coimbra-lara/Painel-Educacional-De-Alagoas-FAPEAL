@@ -4,11 +4,12 @@
   "description": "Backend API for Alagoas Educational Data Processing",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
+    "prisma:prep": "node scripts/prepare-prisma.js",
+    "prisma:generate": "npm run prisma:prep && prisma generate",
+    "prisma:push": "npm run prisma:prep && prisma db push",
+    "dev": "npm run prisma:prep && ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "npm run prisma:generate && tsc",
     "start": "node dist/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
     "test": "vitest run"
   },
   "dependencies": {
