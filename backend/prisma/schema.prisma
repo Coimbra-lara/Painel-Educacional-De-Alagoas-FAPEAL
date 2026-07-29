@@ -18,6 +18,9 @@ model Medida {
   ensino_tipo String
   valor       Float
 
+  @@index([variavel, ano, ensino_rede, ensino_tipo], name: "idx_medidas_principal")
+  @@index([variavel, ensino_rede], name: "idx_medidas_rede")
+  @@index([co_mun, variavel, ano], name: "idx_medidas_municipio")
   @@index([ano, variavel, ensino_rede, ensino_tipo], name: "idx_medidas_agregacao")
   @@index([co_mun, ano], name: "idx_medidas_municipio_ano")
   @@index([variavel], name: "idx_medidas_variavel")

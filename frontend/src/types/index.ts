@@ -10,6 +10,7 @@ export interface FiltrosResponse {
   etapas: string[];
   variaveis: string[];
   totalMedidas?: number;
+  anoMaximo?: number;
 }
 
 export interface FilterState {

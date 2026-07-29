@@ -1,6 +1,24 @@
 import { prisma } from '../services/db';
 import { ehVariavelCensoDemografico, REDE_CENSO_DEMOGRAFICO, ETAPA_CENSO_DEMOGRAFICO } from '../services/censoDemografico';
 
+// Cache em memória: ano mais recente por variável (invalidado após re-importação CSV)
+let anoMaximoCache: Map<string, number> | null = null;
+
+async function getAnoMaximo(variavel: string): Promise<number | undefined> {
+  if (!anoMaximoCache) {
+    // Carrega todos os anos máximos de uma vez (1 query só)
+    const rows = await prisma.$queryRaw<{ variavel: string; max_ano: number }[]>`
+      SELECT variavel, MAX(ano) as max_ano FROM medidas GROUP BY variavel
+    `;
+    anoMaximoCache = new Map(rows.map((r) => [r.variavel, Number(r.max_ano)]));
+  }
+  return anoMaximoCache.get(variavel);
+}
+
+export function invalidarCacheAnos() {
+  anoMaximoCache = null;
+}
+
 export interface FilterParams {
   municipios?: string[];
   ano?: number;
@@ -67,13 +85,18 @@ export async function getFiltros() {
       prisma.medida.count(),
     ]);
 
+  const anos = anosRaw.map((a) => a.ano);
+  // Ano máximo global — usado pelo frontend como padrão para gráficos sem filtro de ano
+  const anoMaximo = anos.length > 0 ? Math.max(...anos) : undefined;
+
   return {
     municipios: municipiosRaw,
-    anos: anosRaw.map((a) => a.ano),
+    anos,
     redes: redesRaw.map((r) => r.ensino_rede),
     etapas: etapasRaw.map((e) => e.ensino_tipo),
     variaveis: variaveisRaw.map((v) => v.variavel),
     totalMedidas,
+    anoMaximo,
   };
 }
 
@@ -354,16 +377,10 @@ export async function getRanking(
 ): Promise<RankingItem[]> {
   const whereBase = buildWhereClause(params);
 
-  // Se nenhum ano foi especificado nos filtros, escolhe o ano mais recente disponível
+  // Se nenhum ano foi especificado nos filtros, usa o ano máximo do cache (sem query extra)
   if (whereBase.ano === undefined) {
-    const latest = await prisma.medida.findFirst({
-      where: { variavel: params.variavel },
-      orderBy: { ano: 'desc' },
-      select: { ano: true },
-    });
-    if (latest) {
-      whereBase.ano = latest.ano;
-    }
+    const anoMax = await getAnoMaximo(params.variavel);
+    if (anoMax !== undefined) whereBase.ano = anoMax;
   }
 
   // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
@@ -423,16 +440,10 @@ export async function getDistribuicao(
   const visao = params.visao || 'rede';
   const whereBase = buildWhereClause(params);
 
-  // Se nenhum ano foi especificado nos filtros, usa o ano mais recente
+  // Se nenhum ano foi especificado nos filtros, usa o ano máximo do cache (sem query extra)
   if (whereBase.ano === undefined) {
-    const latest = await prisma.medida.findFirst({
-      where: { variavel },
-      orderBy: { ano: 'desc' },
-      select: { ano: true },
-    });
-    if (latest) {
-      whereBase.ano = latest.ano;
-    }
+    const anoMax = await getAnoMaximo(variavel);
+    if (anoMax !== undefined) whereBase.ano = anoMax;
   }
 
   const isRate = variavel.startsWith('Taxa');
