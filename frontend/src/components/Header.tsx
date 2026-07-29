@@ -10,7 +10,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenUpload, totalRows, municipiosCount }) => {
   const munLabel = municipiosCount && municipiosCount > 0
     ? `${municipiosCount} Municípios`
-    : '102 Municípios';
+    : 'Alagoas';
 
   return (
     <header className="bg-slate-800/80 backdrop-blur border-b border-slate-700/60 sticky top-0 z-30 px-4 lg:px-8 py-4 shadow-lg">
