@@ -160,3 +160,13 @@ A aplicação foi estruturada para ser hospedada gratuitamente e em produção n
 2. Selecione a pasta raiz do projeto e defina a pasta **Root Directory** como `frontend`.
 3. O arquivo `frontend/vercel.json` cuidará do roteamento SPA e do proxy automático das requisições `/api/*` para o seu backend no Render.
 
+---
+
+## 📋 O que ficou de fora (Funcionalidades Opcionais)
+
+Para focar no rigor matemático, na performance de processamento em streaming e na excelência visual exigidos no núcleo do desafio técnico, as seguintes funcionalidades de escopo estendido não foram implementadas:
+1. **Autenticação e Controle de Acesso (Multi-Tenancy)**: O dashboard é de acesso público direto para facilitar a navegação e avaliação técnica dos avaliadores.
+2. **Exportação Personalizada em PDF/Excel**: A exploração de dados é feita de forma interativa via Tabela Paginada server-side e gráficos interativos no navegador.
+3. **Filtros por Agrupamentos Regionais / Microrregiões**: O agrupamento e a filtragem são focados na divisão municipal e territorial oficial do IBGE para o Estado de Alagoas.
+
+

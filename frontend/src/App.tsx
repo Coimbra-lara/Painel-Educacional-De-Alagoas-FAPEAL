@@ -84,6 +84,18 @@ export function App() {
 
   // Load dashboard data whenever filters or visao change
   const loadDashboardData = useCallback(async () => {
+    if (filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim) {
+      setErrorMsg('⚠️ O ano inicial deve ser menor ou igual ao ano final.');
+      setLoadingIndicadores(false);
+      setLoadingCharts(false);
+      setIndicadores(null);
+      setSeries([]);
+      setRanking([]);
+      setDistribuicao([]);
+      setMapaData([]);
+      return;
+    }
+
     setErrorMsg(null);
     setLoadingIndicadores(true);
     setLoadingCharts(true);
@@ -104,7 +116,8 @@ export function App() {
       setMapaData(mapaRes);
     } catch (err: any) {
       console.error('Erro ao carregar dados do dashboard:', err);
-      setErrorMsg('Nenhum dado encontrado ou backend offline. Envie um arquivo CSV para alimentar o banco.');
+      const msg = err.response?.data?.error?.message || 'Nenhum dado encontrado ou backend offline. Envie um arquivo CSV para alimentar o banco.';
+      setErrorMsg(msg);
     } finally {
       setLoadingIndicadores(false);
       setLoadingCharts(false);
@@ -113,6 +126,12 @@ export function App() {
 
   // Load paginated table
   const loadTabelaData = useCallback(async () => {
+    if (filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim) {
+      setLoadingTabela(false);
+      setTabela(null);
+      return;
+    }
+
     setLoadingTabela(true);
     try {
       const res = await fetchTabela(filters, pagina, tamanho);

@@ -141,4 +141,91 @@ describe('Seção 10: Testes de Validação Obrigatória de Dados Educacionais',
     expect(categorias).not.toContain('Total');
     expect(categorias).not.toContain('Pública');
   });
+
+  describe('Validação dos 5 Cenários Obrigatórios de Upload CSV', () => {
+    it('CASO 1: CSV correto completo — aceita e importa todas as linhas válidas', async () => {
+      const fileStream = fs.createReadStream(sampleCsvPath);
+      const report = await parseAndInsertCsvStream(fileStream, true);
+      expect(report.linhasLidas).toBe(3534);
+      expect(report.linhasImportadas).toBe(3534);
+      expect(report.linhasRejeitadas).toBe(0);
+    });
+
+    it('CASO 2: CSV com coluna obrigatória renomeada — rejeita e não insere linhas parciais', async () => {
+      const invalidHeaderCsv = Readable.from(['codigo_ibge,no_mun,ano,fonte,variavel,ensino_rede,ensino_tipo,valor\n2704302,Maceió,2023,MEC,Matrícula,Total,Ensino Fundamental,100']);
+      await expect(parseAndInsertCsvStream(invalidHeaderCsv, false)).rejects.toThrow('Cabeçalho CSV inválido');
+    });
+
+    it('CASO 3: CSV com cabeçalho correto e ZERO linhas — processa com 0 linhas importadas sem quebrar', async () => {
+      const emptyHeaderCsv = Readable.from(['co_mun,no_mun,ano,fonte,variavel,ensino_rede,ensino_tipo,valor\n']);
+      const report = await parseAndInsertCsvStream(emptyHeaderCsv, false);
+      expect(report.linhasLidas).toBe(0);
+      expect(report.linhasImportadas).toBe(0);
+      expect(report.linhasRejeitadas).toBe(0);
+    });
+
+    it('CASO 4: Conteúdo de texto plano inválido (.txt renomeado para .csv) — rejeita com erro', async () => {
+      const txtContent = Readable.from(['Este é um texto qualquer sem formato csv educacional válido\nLinha 2 de texto']);
+      await expect(parseAndInsertCsvStream(txtContent, false)).rejects.toThrow();
+    });
+
+    it('CASO 5: Reimportação (mesmo CSV enviado 2x) — substitui dados anteriores evitando duplicação', async () => {
+      const fileStream1 = fs.createReadStream(sampleCsvPath);
+      await parseAndInsertCsvStream(fileStream1, true);
+      const count1 = await prisma.medida.count();
+
+      const fileStream2 = fs.createReadStream(sampleCsvPath);
+      await parseAndInsertCsvStream(fileStream2, true);
+      const count2 = await prisma.medida.count();
+
+      expect(count1).toBe(3534);
+      expect(count2).toBe(3534); // Não duplicou para 7068
+    });
+  });
+
+  describe('Diferenciação Estrita entre Valor ZERO e AUSÊNCIA DE DADOS', () => {
+    it('CASO A: Registro existente com valor = 0 deve retornar exatamente 0', async () => {
+      // Inserir medida temporária com valor 0
+      await prisma.medida.create({
+        data: {
+          co_mun: '9999999',
+          no_mun: 'Município Teste Zero',
+          ano: 2023,
+          fonte: 'TESTE',
+          variavel: 'Matrícula',
+          ensino_rede: 'Total',
+          ensino_tipo: 'Ensino Fundamental',
+          valor: 0,
+        },
+      });
+
+      const item = await prisma.medida.findFirst({
+        where: { co_mun: '9999999', ano: 2023 },
+      });
+
+      expect(item).not.toBeNull();
+      expect(item?.valor).toBe(0);
+
+      // Limpar registro temporário
+      await prisma.medida.deleteMany({ where: { co_mun: '9999999' } });
+    });
+
+    it('CASO B: Combinação inexistente deve retornar NULL (ausência de dados)', async () => {
+      const item = await prisma.medida.findFirst({
+        where: { co_mun: '0000000', ano: 1900 },
+      });
+      expect(item).toBeNull();
+    });
+  });
+
+  describe('Validação Estrita do Intervalo de Anos (anoInicio <= anoFim)', () => {
+    it('Intervalo invertido (anoInicio = 2023 > anoFim = 2019) deve ser rejeitado com HTTP 400', async () => {
+      const { app } = await import('../src/app.js');
+      const supertest = (await import('supertest')).default;
+      const response = await supertest(app).get('/api/indicadores?anoInicio=2023&anoFim=2019');
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toBe('O ano inicial deve ser menor ou igual ao ano final.');
+    });
+  });
 });

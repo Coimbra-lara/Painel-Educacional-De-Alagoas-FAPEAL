@@ -168,15 +168,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
           <div className="flex items-center gap-2">
             <select
               value={filters.anoInicio || ''}
-              onChange={(e) => {
-                const newStart = e.target.value ? parseInt(e.target.value, 10) : undefined;
-                if (newStart !== undefined && filters.anoFim !== undefined && newStart > filters.anoFim) {
-                  onChange({ anoInicio: filters.anoFim, anoFim: newStart });
-                } else {
-                  onChange({ anoInicio: newStart });
-                }
-              }}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+              onChange={(e) =>
+                onChange({ anoInicio: e.target.value ? parseInt(e.target.value, 10) : undefined })
+              }
+              className={`w-full bg-slate-900 border ${
+                filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim
+                  ? 'border-rose-500/80 focus:ring-rose-500/50'
+                  : 'border-slate-700 focus:ring-sky-500/50'
+              } rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 transition`}
             >
               <option value="">Início</option>
               {options.anos.map((a) => (
@@ -188,15 +187,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
             <span className="text-slate-500 text-xs">até</span>
             <select
               value={filters.anoFim || ''}
-              onChange={(e) => {
-                const newEnd = e.target.value ? parseInt(e.target.value, 10) : undefined;
-                if (newEnd !== undefined && filters.anoInicio !== undefined && newEnd < filters.anoInicio) {
-                  onChange({ anoInicio: newEnd, anoFim: filters.anoInicio });
-                } else {
-                  onChange({ anoFim: newEnd });
-                }
-              }}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+              onChange={(e) =>
+                onChange({ anoFim: e.target.value ? parseInt(e.target.value, 10) : undefined })
+              }
+              className={`w-full bg-slate-900 border ${
+                filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim
+                  ? 'border-rose-500/80 focus:ring-rose-500/50'
+                  : 'border-slate-700 focus:ring-sky-500/50'
+              } rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 transition`}
             >
               <option value="">Fim</option>
               {options.anos.map((a) => (
@@ -206,6 +204,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
               ))}
             </select>
           </div>
+          {filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim && (
+            <p className="text-[11px] text-amber-400 font-medium mt-1.5 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              O ano inicial deve ser menor ou igual ao ano final.
+            </p>
+          )}
         </div>
       </div>
     </div>

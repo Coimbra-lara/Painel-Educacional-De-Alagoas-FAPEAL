@@ -39,10 +39,20 @@ function parseQueryParams(req: Request) {
     }
   }
 
+  const parsedAnoInicio = anoInicio ? parseInt(String(anoInicio), 10) : undefined;
+  const parsedAnoFim = anoFim ? parseInt(String(anoFim), 10) : undefined;
+
+  if (parsedAnoInicio !== undefined && parsedAnoFim !== undefined && parsedAnoInicio > parsedAnoFim) {
+    const error: any = new Error('O ano inicial deve ser menor ou igual ao ano final.');
+    error.statusCode = 400;
+    error.code = 'INVALID_YEAR_RANGE';
+    throw error;
+  }
+
   return {
     municipios,
-    anoInicio: anoInicio ? parseInt(String(anoInicio), 10) : undefined,
-    anoFim: anoFim ? parseInt(String(anoFim), 10) : undefined,
+    anoInicio: parsedAnoInicio,
+    anoFim: parsedAnoFim,
     rede: rede && rede !== 'Todos' ? String(rede) : undefined,
     etapa: etapa && etapa !== 'Todas' ? String(etapa) : undefined,
     variavel: variavel ? String(variavel) : undefined,

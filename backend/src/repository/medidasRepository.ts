@@ -106,58 +106,48 @@ export interface DistribuicaoItem {
   valor: number;
 }
 
-export function normalizeParams<T extends FilterParams>(params: T): T {
-  if (params.anoInicio !== undefined && params.anoFim !== undefined) {
-    const min = Math.min(params.anoInicio, params.anoFim);
-    const max = Math.max(params.anoInicio, params.anoFim);
-    return { ...params, anoInicio: min, anoFim: max };
-  }
-  return params;
-}
-
 function buildWhereClause(params: FilterParams) {
-  const normParams = normalizeParams(params);
   const where: any = {};
 
-  if (normParams.municipios && normParams.municipios.length > 0) {
-    where.co_mun = { in: normParams.municipios };
+  if (params.municipios && params.municipios.length > 0) {
+    where.co_mun = { in: params.municipios };
   }
 
-  if (normParams.ano !== undefined) {
-    where.ano = normParams.ano;
-  } else if (normParams.anoInicio !== undefined || normParams.anoFim !== undefined) {
-    if (normParams.anoInicio !== undefined && normParams.anoFim !== undefined) {
-      if (normParams.anoInicio === normParams.anoFim) {
-        where.ano = normParams.anoInicio;
+  if (params.ano !== undefined) {
+    where.ano = params.ano;
+  } else if (params.anoInicio !== undefined || params.anoFim !== undefined) {
+    if (params.anoInicio !== undefined && params.anoFim !== undefined) {
+      if (params.anoInicio === params.anoFim) {
+        where.ano = params.anoInicio;
       } else {
         where.ano = {
-          gte: normParams.anoInicio,
-          lte: normParams.anoFim,
+          gte: params.anoInicio,
+          lte: params.anoFim,
         };
       }
-    } else if (normParams.anoInicio !== undefined) {
-      where.ano = normParams.anoInicio;
-    } else if (normParams.anoFim !== undefined) {
-      where.ano = normParams.anoFim;
+    } else if (params.anoInicio !== undefined) {
+      where.ano = params.anoInicio;
+    } else if (params.anoFim !== undefined) {
+      where.ano = params.anoFim;
     }
   }
 
-  if (normParams.variavel) {
-    where.variavel = normParams.variavel;
+  if (params.variavel) {
+    where.variavel = params.variavel;
 
     // Variáveis do censo_demografico têm rede/etapa fixas e diferentes das variáveis
     // educacionais. Ignorar quaisquer filtros de rede/etapa passados pelo usuário e
     // forçar os únicos valores presentes no CSV para essas variáveis.
-    if (ehVariavelCensoDemografico(normParams.variavel)) {
+    if (ehVariavelCensoDemografico(params.variavel)) {
       where.ensino_rede = REDE_CENSO_DEMOGRAFICO;
       where.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
     } else {
-      if (normParams.rede) where.ensino_rede = normParams.rede;
-      if (normParams.etapa) where.ensino_tipo = normParams.etapa;
+      if (params.rede) where.ensino_rede = params.rede;
+      if (params.etapa) where.ensino_tipo = params.etapa;
     }
   } else {
-    if (normParams.rede) where.ensino_rede = normParams.rede;
-    if (normParams.etapa) where.ensino_tipo = normParams.etapa;
+    if (params.rede) where.ensino_rede = params.rede;
+    if (params.etapa) where.ensino_tipo = params.etapa;
   }
 
   return where;
@@ -331,16 +321,15 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
 }
 
 export async function getSeries(params: FilterParams & { variavel: string }): Promise<SerieItem[]> {
-  const normParams = normalizeParams(params);
-  const whereBase = buildWhereClause(normParams);
+  const whereBase = buildWhereClause(params);
 
   // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
   // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
-  if ((normParams.variavel === 'Matrícula' || normParams.variavel === 'Escolas') && !normParams.rede) {
+  if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
     whereBase.ensino_rede = 'Total';
   }
 
-  const isRate = normParams.variavel.startsWith('Taxa');
+  const isRate = params.variavel.startsWith('Taxa');
 
   const rows = await prisma.medida.findMany({
     where: whereBase,
@@ -365,8 +354,8 @@ export async function getSeries(params: FilterParams & { variavel: string }): Pr
 
   const series: SerieItem[] = [];
   for (const ano of Array.from(anosSet).sort((a, b) => a - b)) {
-    if (normParams.anoInicio && ano < normParams.anoInicio) continue;
-    if (normParams.anoFim && ano > normParams.anoFim) continue;
+    if (params.anoInicio && ano < params.anoInicio) continue;
+    if (params.anoFim && ano > params.anoFim) continue;
 
     const values = mapByYear.get(ano);
     if (!values || values.length === 0) {
