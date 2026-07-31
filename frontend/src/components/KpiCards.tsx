@@ -6,9 +6,11 @@ import { formatNumber, formatPercent } from '../utils/formatters.js';
 interface KpiCardsProps {
   data: IndicadoresData | null;
   loading: boolean;
+  etapa?: string;
+  variavel?: string;
 }
 
-export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading }) => {
+export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading, etapa, variavel }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -23,42 +25,55 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading }) => {
     );
   }
 
+  const isNaoAplicavelEtapa =
+    etapa &&
+    etapa !== 'Todas' &&
+    ['Educação Infantil', 'EJA', 'Educação Profissional', 'EJA - Educação de Jovens e Adultos'].includes(etapa);
+
   const cards = [
     {
       title: 'Total de Matrículas',
+      rawValue: data?.totalMatriculas,
       value: formatNumber(data?.totalMatriculas),
       subtitle: 'Alunos matriculados no recorte',
       icon: Users,
       color: 'from-blue-500 to-sky-600',
       badge: 'Filtrado por Total',
       tooltip: 'Soma filtrada pela rede Total para evitar contagem triplicada de alunos',
+      isRate: false,
     },
     {
       title: 'Ofertas de Ensino',
+      rawValue: data?.totalOfertasEscolas,
       value: formatNumber(data?.totalOfertasEscolas),
       subtitle: 'Contagem de etapas por escola',
       icon: School,
       color: 'from-indigo-500 to-purple-600',
       badge: 'Ofertas em escolas',
       tooltip: 'Escolas que oferecem mais de uma etapa são computadas em cada etapa ofertada',
+      isRate: false,
     },
     {
       title: 'Taxa de Aprovação',
+      rawValue: data?.taxaAprovacaoPonderada,
       value: formatPercent(data?.taxaAprovacaoPonderada),
       subtitle: 'Média ponderada por alunos',
       icon: CheckCircle,
       color: 'from-emerald-500 to-teal-600',
       badge: 'Ponderada por Matrículas',
       tooltip: 'Fórmula: soma(taxa × matrículas) / soma(matrículas)',
+      isRate: true,
     },
     {
       title: 'Taxa de Abandono',
+      rawValue: data?.taxaAbandonoPonderada,
       value: formatPercent(data?.taxaAbandonoPonderada),
       subtitle: 'Média ponderada por alunos',
       icon: AlertTriangle,
       color: 'from-amber-500 to-rose-600',
       badge: 'Abandono Escolar',
       tooltip: 'Calculado sobre turmas de Ensino Fundamental e Médio',
+      isRate: true,
     },
   ];
 
@@ -66,6 +81,8 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading }) => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card, idx) => {
         const Icon = card.icon;
+        const isNull = card.rawValue === null || card.rawValue === undefined;
+
         return (
           <div
             key={idx}
@@ -90,7 +107,21 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading }) => {
             </div>
 
             <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-1">
-              {card.value}
+              {isNull ? (
+                card.isRate && isNaoAplicavelEtapa ? (
+                  <span className="text-xs font-semibold text-amber-300 bg-amber-950/60 border border-amber-600/40 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                    Não se aplica a {etapa}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-slate-400 bg-slate-900 border border-slate-700/60 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                    Sem dados no recorte
+                  </span>
+                )
+              ) : (
+                card.value
+              )}
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 mt-2">

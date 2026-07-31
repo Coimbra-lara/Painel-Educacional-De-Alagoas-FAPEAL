@@ -168,9 +168,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
           <div className="flex items-center gap-2">
             <select
               value={filters.anoInicio || ''}
-              onChange={(e) =>
-                onChange({ anoInicio: e.target.value ? parseInt(e.target.value, 10) : undefined })
-              }
+              onChange={(e) => {
+                const newStart = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                if (newStart !== undefined && filters.anoFim !== undefined && newStart > filters.anoFim) {
+                  onChange({ anoInicio: filters.anoFim, anoFim: newStart });
+                } else {
+                  onChange({ anoInicio: newStart });
+                }
+              }}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
             >
               <option value="">Início</option>
@@ -183,9 +188,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
             <span className="text-slate-500 text-xs">até</span>
             <select
               value={filters.anoFim || ''}
-              onChange={(e) =>
-                onChange({ anoFim: e.target.value ? parseInt(e.target.value, 10) : undefined })
-              }
+              onChange={(e) => {
+                const newEnd = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                if (newEnd !== undefined && filters.anoInicio !== undefined && newEnd < filters.anoInicio) {
+                  onChange({ anoInicio: newEnd, anoFim: filters.anoInicio });
+                } else {
+                  onChange({ anoFim: newEnd });
+                }
+              }}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
             >
               <option value="">Fim</option>

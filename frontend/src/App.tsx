@@ -188,7 +188,7 @@ export function App() {
           onReset={handleResetFilters}
         />
 
-        <KpiCards data={indicadores} loading={loadingIndicadores} />
+        <KpiCards data={indicadores} loading={loadingIndicadores} etapa={filters.etapa} variavel={filters.variavel} />
 
         <ChartsSection
           series={series}
