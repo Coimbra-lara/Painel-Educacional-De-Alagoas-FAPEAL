@@ -6,7 +6,6 @@ let anoMaximoCache: Map<string, number> | null = null;
 
 async function getAnoMaximo(variavel: string): Promise<number | undefined> {
   if (!anoMaximoCache) {
-    // Carrega todos os anos máximos de uma vez (1 query só)
     const rows = await prisma.$queryRaw<{ variavel: string; max_ano: number }[]>`
       SELECT variavel, MAX(ano) as max_ano FROM medidas GROUP BY variavel
     `;
@@ -36,6 +35,8 @@ export interface IndicadoresResult {
   taxaAbandonoPonderada: number | null;
   taxaAnalfabetismoMedia: number | null;
   variacaoMatriculas: number | null;
+  /** Human-readable label of the period used for the rate cards, e.g. "2010–2021" or "2023" */
+  periodoReferencia: string | null;
 }
 
 export interface SerieItem {
@@ -46,6 +47,11 @@ export interface SerieItem {
 export interface RankingItem {
   co_mun: string;
   no_mun: string;
+  valor: number;
+}
+
+export interface DistribuicaoItem {
+  categoria: string;
   valor: number;
 }
 
@@ -86,7 +92,6 @@ export async function getFiltros() {
     ]);
 
   const anos = anosRaw.map((a) => a.ano);
-  // Ano máximo global — usado pelo frontend como padrão para gráficos sem filtro de ano
   const anoMaximo = anos.length > 0 ? Math.max(...anos) : undefined;
 
   return {
@@ -98,12 +103,6 @@ export async function getFiltros() {
     totalMedidas,
     anoMaximo,
   };
-}
-
-
-export interface DistribuicaoItem {
-  categoria: string;
-  valor: number;
 }
 
 function buildWhereClause(params: FilterParams) {
@@ -135,155 +134,172 @@ function buildWhereClause(params: FilterParams) {
   if (params.variavel) {
     where.variavel = params.variavel;
 
-    // Variáveis do censo_demografico têm rede/etapa fixas e diferentes das variáveis
-    // educacionais. Ignorar quaisquer filtros de rede/etapa passados pelo usuário e
-    // forçar os únicos valores presentes no CSV para essas variáveis.
     if (ehVariavelCensoDemografico(params.variavel)) {
       where.ensino_rede = REDE_CENSO_DEMOGRAFICO;
       where.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
     } else {
-      if (params.rede) where.ensino_rede = params.rede;
-      if (params.etapa) where.ensino_tipo = params.etapa;
+      if (params.rede && params.rede !== 'Todas' && params.rede !== 'Todos') where.ensino_rede = params.rede;
+      if (params.etapa && params.etapa !== 'Todas' && params.etapa !== 'Todos') where.ensino_tipo = params.etapa;
     }
   } else {
-    if (params.rede) where.ensino_rede = params.rede;
-    if (params.etapa) where.ensino_tipo = params.etapa;
+    if (params.rede && params.rede !== 'Todas' && params.rede !== 'Todos') where.ensino_rede = params.rede;
+    if (params.etapa && params.etapa !== 'Todas' && params.etapa !== 'Todos') where.ensino_tipo = params.etapa;
   }
 
   return where;
 }
 
+/**
+ * FUNÇÃO CENTRALIZADA DE AGREGAÇÃO PONDERADA / SOMA
+ *
+ * Esta função é utilizada por TODOS os componentes do dashboard (KPI Cards, Evolução
+ * Temporal, Ranking de Municípios, Quebra por Rede, Quebra por Etapa e Mapa Coroplético).
+ *
+ * Regras e Rigor Matemático:
+ * 1. Para variáveis de Taxa (`isRate`):
+ *    Calcula a média ponderada rigorosa: SUM(taxa_i × peso_i) / SUM(peso_i)
+ *    - Variáveis Educacionais (Taxa de Aprovação, Taxa de Abandono, Taxa de Reprovação):
+ *      peso_i = Matrícula correspondente ao mesmo (município, ano, etapa, rede).
+ *    - Variáveis do Censo Demográfico (Taxa de Analfabetismo, Taxa de Alfabetização):
+ *      peso_i = Pessoas Total correspondente ao mesmo (município, ano).
+ * 2. Para variáveis de Contagem/Soma (!`isRate`):
+ *    Soma os valores reais `SUM(valor)`.
+ *    Para Matrícula e Escolas, se nenhuma rede específica for filtrada, utiliza o padrão
+ *    `ensino_rede = 'Total'` para evitar duplicidade de contagem entre redes.
+ * 3. Critério Multi-Ano:
+ *    Quando o filtro abrange um intervalo de anos (ex: 2010 a 2021), TODOS os anos do
+ *    intervalo são combinados na mesma fórmula de média ponderada/soma acumulada.
+ * 4. Tratamento de Ausência de Dados:
+ *    Se o peso acumulado ou a contagem for zero ou ausente, retorna `null` (jamais
+ *    trata dado ausente como zero nem realiza fallback para média simples).
+ */
+export async function aggregateRate(
+  whereBase: any,
+  variavel: string,
+  params: FilterParams
+): Promise<number | null> {
+  const isCenso = ehVariavelCensoDemografico(variavel);
+  const weightVar = isCenso ? 'Pessoas Total' : 'Matrícula';
+
+  const whereTaxa = { ...whereBase, variavel };
+  if (isCenso) {
+    whereTaxa.ensino_rede = REDE_CENSO_DEMOGRAFICO;
+    whereTaxa.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
+  } else if (!whereTaxa.ensino_rede || whereTaxa.ensino_rede === 'Todas' || whereTaxa.ensino_rede === 'Todos') {
+    whereTaxa.ensino_rede = params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total';
+  }
+
+  const taxaRows = await prisma.medida.findMany({
+    where: whereTaxa,
+    select: { co_mun: true, ano: true, ensino_rede: true, ensino_tipo: true, valor: true },
+  });
+
+  if (taxaRows.length === 0) return null;
+
+  const whereWeight: any = { ...whereBase, variavel: weightVar };
+  if (isCenso) {
+    whereWeight.ensino_rede = REDE_CENSO_DEMOGRAFICO;
+    whereWeight.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
+  } else {
+    whereWeight.ensino_rede = whereTaxa.ensino_rede;
+  }
+
+  let weightRows = await prisma.medida.findMany({
+    where: whereWeight,
+    select: { co_mun: true, ano: true, ensino_rede: true, ensino_tipo: true, valor: true },
+  });
+
+  // Fallback: se rede filtrada não for 'Total' e não possuir matrículas no recorte, tenta com rede='Total'
+  if (!isCenso && weightRows.length === 0 && whereWeight.ensino_rede !== 'Total') {
+    weightRows = await prisma.medida.findMany({
+      where: { ...whereWeight, ensino_rede: 'Total' },
+      select: { co_mun: true, ano: true, ensino_rede: true, ensino_tipo: true, valor: true },
+    });
+  }
+
+  const weightMap = new Map<string, number>();
+  for (const w of weightRows) {
+    const key = isCenso ? `${w.co_mun}_${w.ano}` : `${w.co_mun}_${w.ano}_${w.ensino_tipo}`;
+    weightMap.set(key, w.valor);
+  }
+
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const r of taxaRows) {
+    const key = isCenso ? `${r.co_mun}_${r.ano}` : `${r.co_mun}_${r.ano}_${r.ensino_tipo}`;
+    const weight = weightMap.get(key) ?? 0;
+    if (weight > 0) {
+      weightedSum += r.valor * weight;
+      totalWeight += weight;
+    }
+  }
+
+  return totalWeight > 0 ? Number((weightedSum / totalWeight).toFixed(2)) : null;
+}
+
+export async function aggregateCount(
+  whereBase: any,
+  variavel: string,
+  params: FilterParams
+): Promise<number | null> {
+  const isCenso = ehVariavelCensoDemografico(variavel);
+  const whereCount = { ...whereBase, variavel };
+
+  if (isCenso) {
+    whereCount.ensino_rede = REDE_CENSO_DEMOGRAFICO;
+    whereCount.ensino_tipo = ETAPA_CENSO_DEMOGRAFICO;
+  } else if (
+    (variavel === 'Matrícula' || variavel === 'Escolas') &&
+    (!whereCount.ensino_rede || whereCount.ensino_rede === 'Todas' || whereCount.ensino_rede === 'Todos')
+  ) {
+    whereCount.ensino_rede = params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total';
+  }
+
+  const agg = await prisma.medida.aggregate({
+    where: whereCount,
+    _sum: { valor: true },
+  });
+
+  return agg._sum.valor !== null ? Math.round(agg._sum.valor) : null;
+}
+
 export async function getIndicadores(params: FilterParams): Promise<IndicadoresResult> {
   const whereBase = buildWhereClause(params);
 
-  // 1. Total Matrículas (Default ensino_rede = 'Total' if not specified to prevent multi-counting)
+  let periodoReferencia: string | null = null;
+  if (params.anoInicio !== undefined && params.anoFim !== undefined) {
+    periodoReferencia =
+      params.anoInicio === params.anoFim
+        ? String(params.anoInicio)
+        : `${params.anoInicio}–${params.anoFim}`;
+  } else if (params.anoInicio !== undefined) {
+    periodoReferencia = `a partir de ${params.anoInicio}`;
+  } else if (params.anoFim !== undefined) {
+    periodoReferencia = `até ${params.anoFim}`;
+  }
+
+  const [
+    totalMatriculas,
+    totalOfertasEscolas,
+    taxaAprovacaoPonderada,
+    taxaAbandonoPonderada,
+    taxaAnalfabetismoMedia,
+  ] = await Promise.all([
+    aggregateCount(whereBase, 'Matrícula', params),
+    aggregateCount(whereBase, 'Escolas', params),
+    aggregateRate(whereBase, 'Taxa de Aprovação', params),
+    aggregateRate(whereBase, 'Taxa de Abandono', params),
+    aggregateRate(whereBase, 'Taxa de Analfabetismo', params),
+  ]);
+
+  // Variação de Matrículas
   const whereMatricula = {
     ...whereBase,
     variavel: 'Matrícula',
-    ensino_rede: params.rede || 'Total',
+    ensino_rede: params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total',
   };
 
-  const sumMatriculas = await prisma.medida.aggregate({
-    where: whereMatricula,
-    _sum: { valor: true },
-  });
-
-  // 2. Total Ofertas de Escolas
-  const whereEscolas = {
-    ...whereBase,
-    variavel: 'Escolas',
-    ensino_rede: params.rede || 'Total',
-  };
-
-  const sumEscolas = await prisma.medida.aggregate({
-    where: whereEscolas,
-    _sum: { valor: true },
-  });
-
-  // 3. Taxa de Aprovação Ponderada: sum(taxa * matriculas) / sum(matriculas)
-  const whereAprov = {
-    ...whereBase,
-    variavel: 'Taxa de Aprovação',
-    ensino_rede: params.rede || 'Total',
-  };
-
-  const aprovRows = await prisma.medida.findMany({
-    where: whereAprov,
-    select: { co_mun: true, ano: true, ensino_tipo: true, valor: true },
-  });
-
-  let taxaAprovacaoPonderada: number | null = null;
-  if (aprovRows.length > 0) {
-    // Fetch matching enrollments
-    const matrForAprov = await prisma.medida.findMany({
-      where: {
-        ...whereBase,
-        variavel: 'Matrícula',
-        ensino_rede: params.rede || 'Total',
-      },
-      select: { co_mun: true, ano: true, ensino_tipo: true, valor: true },
-    });
-
-    const matrMap = new Map<string, number>();
-    for (const m of matrForAprov) {
-      const key = `${m.co_mun}_${m.ano}_${m.ensino_tipo}`;
-      matrMap.set(key, m.valor);
-    }
-
-    let weightedSum = 0;
-    let totalWeight = 0;
-    let simpleSum = 0;
-
-    for (const r of aprovRows) {
-      const key = `${r.co_mun}_${r.ano}_${r.ensino_tipo}`;
-      const weight = matrMap.get(key) || 0;
-      if (weight > 0) {
-        weightedSum += r.valor * weight;
-        totalWeight += weight;
-      }
-      simpleSum += r.valor;
-    }
-
-    taxaAprovacaoPonderada = totalWeight > 0 ? weightedSum / totalWeight : simpleSum / aprovRows.length;
-  }
-
-  // 4. Taxa de Abandono Ponderada
-  const whereAbandono = {
-    ...whereBase,
-    variavel: 'Taxa de Abandono',
-    ensino_rede: params.rede || 'Total',
-  };
-
-  const abandonoRows = await prisma.medida.findMany({
-    where: whereAbandono,
-    select: { co_mun: true, ano: true, ensino_tipo: true, valor: true },
-  });
-
-  let taxaAbandonoPonderada: number | null = null;
-  if (abandonoRows.length > 0) {
-    const matrForAbandono = await prisma.medida.findMany({
-      where: {
-        ...whereBase,
-        variavel: 'Matrícula',
-        ensino_rede: params.rede || 'Total',
-      },
-      select: { co_mun: true, ano: true, ensino_tipo: true, valor: true },
-    });
-
-    const matrMap = new Map<string, number>();
-    for (const m of matrForAbandono) {
-      const key = `${m.co_mun}_${m.ano}_${m.ensino_tipo}`;
-      matrMap.set(key, m.valor);
-    }
-
-    let weightedSum = 0;
-    let totalWeight = 0;
-    let simpleSum = 0;
-
-    for (const r of abandonoRows) {
-      const key = `${r.co_mun}_${r.ano}_${r.ensino_tipo}`;
-      const weight = matrMap.get(key) || 0;
-      if (weight > 0) {
-        weightedSum += r.valor * weight;
-        totalWeight += weight;
-      }
-      simpleSum += r.valor;
-    }
-
-    taxaAbandonoPonderada = totalWeight > 0 ? weightedSum / totalWeight : simpleSum / abandonoRows.length;
-  }
-
-  // 5. Taxa de Analfabetismo Média
-  const whereAnal = {
-    ...whereBase,
-    variavel: 'Taxa de Analfabetismo',
-  };
-  const analRows = await prisma.medida.aggregate({
-    where: whereAnal,
-    _avg: { valor: true },
-  });
-
-  // 6. Variação de Matrículas (Ano a Ano ou período)
   const anosDisponiveis = await prisma.medida.findMany({
     where: whereMatricula,
     select: { ano: true },
@@ -306,68 +322,50 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
     });
 
     if (valMin._sum.valor && valMin._sum.valor > 0 && valMax._sum.valor !== null) {
-      variacaoMatriculas = ((valMax._sum.valor - valMin._sum.valor) / valMin._sum.valor) * 100;
+      variacaoMatriculas = Number((((valMax._sum.valor - valMin._sum.valor) / valMin._sum.valor) * 100).toFixed(2));
     }
   }
 
   return {
-    totalMatriculas: sumMatriculas._sum.valor ?? null,
-    totalOfertasEscolas: sumEscolas._sum.valor ?? null,
+    totalMatriculas,
+    totalOfertasEscolas,
     taxaAprovacaoPonderada,
     taxaAbandonoPonderada,
-    taxaAnalfabetismoMedia: analRows._avg.valor ?? null,
+    taxaAnalfabetismoMedia,
     variacaoMatriculas,
+    periodoReferencia,
   };
 }
 
 export async function getSeries(params: FilterParams & { variavel: string }): Promise<SerieItem[]> {
   const whereBase = buildWhereClause(params);
-
-  // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
-  // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
-  if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
-    whereBase.ensino_rede = 'Total';
-  }
-
   const isRate = params.variavel.startsWith('Taxa');
 
-  const rows = await prisma.medida.findMany({
-    where: whereBase,
-    select: { ano: true, valor: true, co_mun: true, ensino_tipo: true },
-  });
-
-  const anosSet = new Set<number>();
-
-  // Fetch all available years in dataset for consistency
-  const allAnos = await prisma.medida.findMany({
+  // Buscar todos os anos disponíveis no dataset ou no intervalo filtrado
+  const anosRows = await prisma.medida.findMany({
     select: { ano: true },
     distinct: ['ano'],
     orderBy: { ano: 'asc' },
   });
-  allAnos.forEach((a) => anosSet.add(a.ano));
 
-  const mapByYear = new Map<number, number[]>();
-  for (const r of rows) {
-    if (!mapByYear.has(r.ano)) mapByYear.set(r.ano, []);
-    mapByYear.get(r.ano)!.push(r.valor);
-  }
+  const anosFiltrados = anosRows
+    .map((a) => a.ano)
+    .filter((ano) => {
+      if (params.anoInicio && ano < params.anoInicio) return false;
+      if (params.anoFim && ano > params.anoFim) return false;
+      return true;
+    });
 
-  const series: SerieItem[] = [];
-  for (const ano of Array.from(anosSet).sort((a, b) => a - b)) {
-    if (params.anoInicio && ano < params.anoInicio) continue;
-    if (params.anoFim && ano > params.anoFim) continue;
-
-    const values = mapByYear.get(ano);
-    if (!values || values.length === 0) {
-      series.push({ ano, valor: null }); // Preserve null for missing periods!
-    } else if (isRate) {
-      const avg = values.reduce((s, v) => s + v, 0) / values.length;
-      series.push({ ano, valor: Number(avg.toFixed(2)) });
-    } else {
-      const sum = values.reduce((s, v) => s + v, 0);
-      series.push({ ano, valor: Math.round(sum) });
-    }
-  }
+  const series = await Promise.all(
+    anosFiltrados.map(async (ano) => {
+      const whereYear = { ...whereBase, ano };
+      const paramsYear = { ...params, anoInicio: ano, anoFim: ano, ano };
+      const valor = isRate
+        ? await aggregateRate(whereYear, params.variavel, paramsYear)
+        : await aggregateCount(whereYear, params.variavel, paramsYear);
+      return { ano, valor };
+    })
+  );
 
   return series;
 }
@@ -376,60 +374,45 @@ export async function getRanking(
   params: FilterParams & { variavel: string; limite?: number }
 ): Promise<RankingItem[]> {
   const whereBase = buildWhereClause(params);
+  const isRate = params.variavel.startsWith('Taxa');
 
-  // Se nenhum ano foi especificado nos filtros, usa o ano máximo do cache (sem query extra)
-  if (whereBase.ano === undefined) {
+  // Se nenhum ano for especificado nos filtros, utiliza o ano máximo da variável
+  if (whereBase.ano === undefined && params.anoInicio === undefined && params.anoFim === undefined) {
     const anoMax = await getAnoMaximo(params.variavel);
     if (anoMax !== undefined) whereBase.ano = anoMax;
   }
 
-  // Matrícula e Escolas: default rede = 'Total' se não especificado (evita dupla contagem)
-  // Variáveis do censo demográfico já têm rede/etapa sobrescritas em buildWhereClause
-  if ((params.variavel === 'Matrícula' || params.variavel === 'Escolas') && !params.rede) {
-    whereBase.ensino_rede = 'Total';
-  }
-
-  const rows = await prisma.medida.findMany({
+  const municipiosRaw = await prisma.medida.findMany({
     where: whereBase,
-    select: { co_mun: true, no_mun: true, valor: true },
+    select: { co_mun: true, no_mun: true },
+    distinct: ['co_mun'],
   });
 
-  const munMap = new Map<string, { no_mun: string; sum: number; count: number }>();
-  for (const r of rows) {
-    if (!munMap.has(r.co_mun)) {
-      munMap.set(r.co_mun, { no_mun: r.no_mun, sum: 0, count: 0 });
-    }
-    const item = munMap.get(r.co_mun)!;
-    item.sum += r.valor;
-    item.count += 1;
-  }
+  const ranking = await Promise.all(
+    municipiosRaw.map(async (m) => {
+      const whereMun = { ...whereBase, co_mun: m.co_mun };
+      const paramsMun = { ...params, municipios: [m.co_mun] };
+      const valor = isRate
+        ? await aggregateRate(whereMun, params.variavel, paramsMun)
+        : await aggregateCount(whereMun, params.variavel, paramsMun);
 
-  const isRate = params.variavel.startsWith('Taxa');
+      return valor !== null ? { co_mun: m.co_mun, no_mun: m.no_mun, valor } : null;
+    })
+  );
 
-  const result: RankingItem[] = [];
-  for (const [co_mun, data] of munMap.entries()) {
-    const val = isRate ? data.sum / data.count : data.sum;
-    result.push({
-      co_mun,
-      no_mun: data.no_mun,
-      valor: Number(val.toFixed(2)),
-    });
-  }
-
-  // Sort descending by default
-  result.sort((a, b) => b.valor - a.valor);
+  const filteredRanking = ranking.filter((item): item is RankingItem => item !== null);
+  filteredRanking.sort((a, b) => b.valor - a.valor);
 
   const limite = params.limite || 10;
-  return result.slice(0, limite);
+  return filteredRanking.slice(0, limite);
 }
 
 export async function getMapaData(params: FilterParams & { variavel: string }): Promise<RankingItem[]> {
-  // Similar to ranking but returns all municipalities for choropleth mapping
-  return getRanking({ ...params, limite: 200 });
+  return getRanking({ ...params, limite: 1000 });
 }
 
 export async function getDistribuicao(
-  params: FilterParams & { visao?: 'rede' | 'etapa' }
+  params: FilterParams & { visao?: 'rede' | 'etapa'; variavel?: string }
 ): Promise<DistribuicaoItem[]> {
   const variavel = params.variavel || 'Matrícula';
 
@@ -439,85 +422,60 @@ export async function getDistribuicao(
 
   const visao = params.visao || 'rede';
   const whereBase = buildWhereClause(params);
+  const isRate = variavel.startsWith('Taxa');
 
-  // Se nenhum ano foi especificado nos filtros, usa o ano máximo do cache (sem query extra)
-  if (whereBase.ano === undefined) {
+  if (whereBase.ano === undefined && params.anoInicio === undefined && params.anoFim === undefined) {
     const anoMax = await getAnoMaximo(variavel);
     if (anoMax !== undefined) whereBase.ano = anoMax;
   }
 
-  const isRate = variavel.startsWith('Taxa');
-
   if (visao === 'rede') {
     // Redes granulares sem sobreposição (ignora 'Total' e 'Pública')
     const granularRedes = ['Estadual', 'Municipal', 'Federal', 'Privada'];
-    const whereRede = {
-      ...whereBase,
-      ensino_rede: { in: granularRedes },
-    };
 
-    const rows = await prisma.medida.findMany({
-      where: whereRede,
-      select: { ensino_rede: true, valor: true },
-    });
+    const items = await Promise.all(
+      granularRedes.map(async (redeName) => {
+        const whereRede = { ...whereBase, ensino_rede: redeName };
+        const paramsRede = { ...params, rede: redeName, variavel };
+        const valor = isRate
+          ? await aggregateRate(whereRede, variavel, paramsRede)
+          : await aggregateCount(whereRede, variavel, paramsRede);
 
-    const mapRede = new Map<string, { sum: number; count: number }>();
-    for (const r of rows) {
-      if (!mapRede.has(r.ensino_rede)) {
-        mapRede.set(r.ensino_rede, { sum: 0, count: 0 });
-      }
-      const item = mapRede.get(r.ensino_rede)!;
-      item.sum += r.valor;
-      item.count += 1;
-    }
+        return valor !== null ? { categoria: redeName, valor } : null;
+      })
+    );
 
-    const result: DistribuicaoItem[] = [];
-    for (const redeName of granularRedes) {
-      const data = mapRede.get(redeName);
-      if (data && data.count > 0) {
-        const val = isRate ? data.sum / data.count : data.sum;
-        result.push({
-          categoria: redeName,
-          valor: Number(val.toFixed(2)),
-        });
-      }
-    }
-    return result;
+    return items.filter((item): item is DistribuicaoItem => item !== null);
   } else {
     // Visão por Etapa
-    const whereEtapa = {
-      ...whereBase,
-      ensino_rede: params.rede || 'Total',
-    };
-
-    const rows = await prisma.medida.findMany({
-      where: whereEtapa,
-      select: { ensino_tipo: true, valor: true },
+    let etapasRaw = await prisma.medida.findMany({
+      where: whereBase,
+      select: { ensino_tipo: true },
+      distinct: ['ensino_tipo'],
     });
 
-    const mapEtapa = new Map<string, { sum: number; count: number }>();
-    for (const r of rows) {
-      if (!mapEtapa.has(r.ensino_tipo)) {
-        mapEtapa.set(r.ensino_tipo, { sum: 0, count: 0 });
-      }
-      const item = mapEtapa.get(r.ensino_tipo)!;
-      item.sum += r.valor;
-      item.count += 1;
+    let etapas = etapasRaw.map((e) => e.ensino_tipo);
+
+    // Para taxas de rendimento, restringe apenas às etapas onde a taxa existe
+    if (isRate) {
+      etapas = etapas.filter((e) => e === 'Ensino Fundamental' || e === 'Ensino Médio');
     }
 
-    const result: DistribuicaoItem[] = [];
-    for (const [etapaName, data] of mapEtapa.entries()) {
-      if (data.count > 0) {
-        const val = isRate ? data.sum / data.count : data.sum;
-        result.push({
-          categoria: etapaName,
-          valor: Number(val.toFixed(2)),
-        });
-      }
-    }
+    const items = await Promise.all(
+      etapas.map(async (etapaName) => {
+        const whereEtapa = { ...whereBase, ensino_tipo: etapaName };
+        const paramsEtapa = { ...params, etapa: etapaName, variavel };
+        const valor = isRate
+          ? await aggregateRate(whereEtapa, variavel, paramsEtapa)
+          : await aggregateCount(whereEtapa, variavel, paramsEtapa);
 
-    result.sort((a, b) => b.valor - a.valor);
-    return result;
+        return valor !== null ? { categoria: etapaName, valor } : null;
+      })
+    );
+
+    const filtered = items.filter((item): item is DistribuicaoItem => item !== null);
+    filtered.sort((a, b) => b.valor - a.valor);
+    return filtered;
   }
 }
 

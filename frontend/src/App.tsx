@@ -11,7 +11,6 @@ import {
   fetchIndicadores,
   fetchSeries,
   fetchRanking,
-  fetchMapa,
   fetchDistribuicao,
   fetchTabela,
 } from './services/api.js';
@@ -50,6 +49,7 @@ export function App() {
   const [series, setSeries] = useState<SerieItem[]>([]);
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [distribuicao, setDistribuicao] = useState<DistribuicaoItem[]>([]);
+  // mapaData: fetched via fetchRanking with limite=1000 (same logic/endpoint as the Ranking chart)
   const [mapaData, setMapaData] = useState<RankingItem[]>([]);
   const [tabela, setTabela] = useState<TabelaData | null>(null);
 
@@ -101,12 +101,15 @@ export function App() {
     setLoadingCharts(true);
 
     try {
+      // fetchRanking with limite=1000 is the single source of truth for map data.
+      // This is IDENTICAL to the Ranking chart call — same endpoint (/api/ranking),
+      // same filter object, same aggregation logic — the only difference is the limit.
       const [indData, seriesData, rankingData, distData, mapaRes] = await Promise.all([
         fetchIndicadores(filters),
         fetchSeries(filters),
         fetchRanking(filters, 10),
         fetchDistribuicao(filters, visao),
-        fetchMapa(filters),
+        fetchRanking(filters, 1000),
       ]);
 
       setIndicadores(indData);
@@ -180,20 +183,20 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F7F5F0] text-[#1C2B26] flex flex-col font-sans selection:bg-[#0E3B3A] selection:text-white">
       <Header
         onOpenUpload={() => setIsUploadOpen(true)}
         totalRows={filtrosOptions.totalMedidas}
         municipiosCount={filtrosOptions.municipios.length}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
         {errorMsg && (
-          <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-300 text-sm flex items-center justify-between">
+          <div className="p-4 bg-[#FAF3E5] border border-[#E8D7B5] rounded-2xl text-[#7A5416] text-xs sm:text-sm flex items-center justify-between shadow-xs">
             <span>{errorMsg}</span>
             <button
               onClick={() => setIsUploadOpen(true)}
-              className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold rounded-lg transition"
+              className="px-3.5 py-1.5 bg-[#0E3B3A] hover:bg-[#092B2A] text-white text-xs uppercase tracking-wider font-medium rounded-lg transition"
             >
               Fazer Upload CSV
             </button>
@@ -240,7 +243,7 @@ export function App() {
         />
       </main>
 
-      <footer className="bg-slate-950 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+      <footer className="bg-[#EFECE4] border-t border-[#E5E0D7] py-6 text-center text-xs text-[#6E6A63] font-sans">
         Painel de Indicadores Educacionais de Alagoas — Desafio Técnico Full-Stack (React, Node.js, Express, TypeScript & Prisma)
       </footer>
 

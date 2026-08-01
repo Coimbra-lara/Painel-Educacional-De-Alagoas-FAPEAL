@@ -50,41 +50,41 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C2B26]/60 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white border border-[#E5E0D7] rounded-2xl shadow-2xl max-w-lg w-full p-7 relative overflow-hidden">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700/50 transition"
+          className="absolute top-4 right-4 text-[#6E6A63] hover:text-[#0E3B3A] p-1.5 rounded-lg hover:bg-[#F2EDE4] transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-xl">
+        <div className="flex items-center gap-3.5 mb-6">
+          <div className="p-2.5 bg-[#F2EDE4] text-[#0E3B3A] border border-[#E2DDD3] rounded-xl flex items-center justify-center">
             <Upload className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Importar Arquivo CSV</h2>
-            <p className="text-xs text-slate-400">Processamento transacional em streaming no servidor</p>
+            <h2 className="font-serif text-xl font-normal text-[#0E3B3A]">Importar Arquivo CSV</h2>
+            <p className="text-xs text-[#6E6A63] mt-0.5">Processamento transacional em streaming no servidor</p>
           </div>
         </div>
 
         {!report ? (
-          <div className="space-y-4">
-            <label className="border-2 border-dashed border-slate-600 hover:border-sky-400 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-slate-900/40 hover:bg-slate-900/70 transition-all text-center group">
-              <FileText className="w-10 h-10 text-slate-400 group-hover:text-sky-400 mb-2 transition" />
-              <span className="text-sm font-medium text-slate-200">
+          <div className="space-y-5">
+            <label className="border-2 border-dashed border-[#D5CFB6] hover:border-[#0E3B3A] rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-[#FAF8F3] hover:bg-[#F4F0E8] transition-all text-center group">
+              <FileText className="w-10 h-10 text-[#8C867A] group-hover:text-[#0E3B3A] mb-3 transition" />
+              <span className="text-sm font-medium text-[#1C2B26]">
                 {file ? file.name : 'Clique ou arraste o arquivo CSV aqui'}
               </span>
-              <span className="text-xs text-slate-400 mt-1">
+              <span className="text-xs text-[#6E6A63] mt-1">
                 {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Suporta de 3.500 até 145.000+ linhas'}
               </span>
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
             </label>
 
             {error && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
@@ -93,7 +93,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
               <button
                 onClick={onClose}
                 disabled={loading}
-                className="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition"
+                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#6E6A63] hover:text-[#0E3B3A] hover:bg-[#F2EDE4] rounded-lg transition"
               >
                 Cancelar
               </button>
@@ -101,7 +101,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
               <button
                 onClick={handleUpload}
                 disabled={!file || loading}
-                className="flex items-center gap-2 px-5 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg shadow-md transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3B3A] hover:bg-[#092B2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
               >
                 {loading ? (
                   <>
@@ -118,36 +118,36 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
             </div>
           </div>
         ) : (
-          <div className="space-y-4 animate-fade-in">
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+          <div className="space-y-5 animate-fade-in">
+            <div className="p-4 bg-[#EBF4EE] border border-[#C6E2D1] rounded-xl flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-[#1A5336] shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-emerald-300">Importação Concluída com Sucesso!</h3>
-                <p className="text-xs text-slate-300 mt-0.5">Os dados foram armazenados no banco de dados.</p>
+                <h3 className="text-sm font-semibold text-[#1A5336]">Importação Concluída com Sucesso!</h3>
+                <p className="text-xs text-[#2A6647] mt-0.5">Os dados foram armazenados no banco de dados.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
-                <div className="text-lg font-bold text-white">{report.linhasLidas.toLocaleString('pt-BR')}</div>
-                <div className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Lidas</div>
+              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
+                <div className="text-xl font-serif font-normal text-[#1C2B26]">{report.linhasLidas.toLocaleString('pt-BR')}</div>
+                <div className="text-[10px] text-[#6E6A63] font-mono uppercase tracking-wider mt-0.5">Lidas</div>
               </div>
-              <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
-                <div className="text-lg font-bold text-emerald-400">{report.linhasImportadas.toLocaleString('pt-BR')}</div>
-                <div className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Importadas</div>
+              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
+                <div className="text-xl font-serif font-semibold text-[#1A5336]">{report.linhasImportadas.toLocaleString('pt-BR')}</div>
+                <div className="text-[10px] text-[#1A5336] font-mono uppercase tracking-wider mt-0.5">Importadas</div>
               </div>
-              <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
-                <div className="text-lg font-bold text-rose-400">{report.linhasRejeitadas.toLocaleString('pt-BR')}</div>
-                <div className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Rejeitadas</div>
+              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
+                <div className="text-xl font-serif font-semibold text-[#902A20]">{report.linhasRejeitadas.toLocaleString('pt-BR')}</div>
+                <div className="text-[10px] text-[#902A20] font-mono uppercase tracking-wider mt-0.5">Rejeitadas</div>
               </div>
             </div>
 
             {report.erros && report.erros.length > 0 && (
               <div className="mt-3">
-                <h4 className="text-xs font-semibold text-slate-300 mb-2">Linhas com Inconsistências ({report.erros.length}):</h4>
-                <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs text-slate-400 font-mono">
+                <h4 className="text-xs font-semibold text-[#1C2B26] mb-2">Linhas com Inconsistências ({report.erros.length}):</h4>
+                <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs text-[#6E6A63] font-mono">
                   {report.erros.map((err, idx) => (
-                    <div key={idx} className="p-1.5 bg-slate-900/40 rounded border border-slate-700/40">
+                    <div key={idx} className="p-2 bg-[#FAF8F3] rounded border border-[#E5E0D7]">
                       Linha {err.linha}: {err.motivo}
                     </div>
                   ))}
@@ -158,7 +158,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
             <div className="flex justify-end pt-2">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-sky-500 hover:bg-sky-400 text-white font-medium text-sm rounded-lg shadow-md transition"
+                className="px-5 py-2.5 bg-[#0E3B3A] hover:bg-[#092B2A] text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
               >
                 Concluir & Fechar
               </button>

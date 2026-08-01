@@ -29,6 +29,8 @@ export interface IndicadoresData {
   taxaAbandonoPonderada: number | null;
   taxaAnalfabetismoMedia: number | null;
   variacaoMatriculas: number | null;
+  /** Label of the period used for weighted rate cards (e.g. "2010–2021" or "2023"). Null = all years. */
+  periodoReferencia: string | null;
 }
 
 export interface SerieItem {

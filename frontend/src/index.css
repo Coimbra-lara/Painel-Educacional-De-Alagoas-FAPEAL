@@ -4,28 +4,32 @@
 
 @layer base {
   body {
-    @apply bg-slate-900 text-slate-100 font-sans antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-[#F7F5F0] text-[#1C2B26] font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
   }
 }
 
-/* Custom scrollbar styling */
+/* Custom editorial scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #F0ECE3;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #D5CFB6;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #0E3B3A;
 }
 
 @keyframes fadeIn {

@@ -60,73 +60,78 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 h-80 animate-pulse"></div>
+        <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 h-80 animate-pulse"></div>
+        <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 h-80 animate-pulse"></div>
+        <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 h-80 animate-pulse"></div>
       </div>
     );
   }
 
+  // Paleta de cores com alto contraste e acessibilidade garantida (mínimo 4.5:1)
   const BAR_COLORS = [
-    '#0284c7',
-    '#0ea5e9',
-    '#38bdf8',
-    '#6366f1',
-    '#818cf8',
-    '#a855f7',
-    '#c084fc',
-    '#ec4899',
-    '#f43f5e',
+    '#0E3B3A',
+    '#1F564D',
+    '#2D534A',
+    '#376356',
+    '#76501C',
+    '#8C6B3F',
+    '#2B584C',
+    '#374151',
+    '#52796F',
   ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* 1. Série Temporal */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+      <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-base font-bold text-white">Evolução Temporal ({variavel})</h3>
-            <p className="text-xs text-slate-400">Série histórica anual dos dados agregados</p>
+            <h3 className="font-serif text-lg font-normal text-[#0E3B3A]">Evolução Temporal ({variavel})</h3>
+            <p className="text-xs text-[#4B5563] mt-0.5 font-medium">Série histórica anual dos dados agregados</p>
             {isEscolasSemEtapa && (
-              <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 shrink-0" />
+              <p className="text-[11px] text-[#855B18] font-medium mt-1 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 shrink-0 text-[#B88228]" />
                 <span>Valores somados por etapa representam ofertas de ensino, não escolas únicas</span>
               </p>
             )}
           </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg shrink-0">
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 bg-[#F2EDE4] text-[#0E3B3A] border border-[#E2DDD3] rounded-md shrink-0">
             Histórico
           </span>
         </div>
 
         {series.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm gap-1">
+          <div className="h-64 flex flex-col items-center justify-center text-[#4B5563] text-sm gap-1 font-medium">
             <span>Sem dados temporais para o filtro selecionado</span>
-            <span className="text-xs text-slate-500">Selecione um intervalo de anos para ver evolução</span>
+            <span className="text-xs text-[#6B7280]">Selecione um intervalo de anos para ver evolução</span>
           </div>
         ) : hasOnlyOnePoint ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm gap-1">
+          <div className="h-64 flex flex-col items-center justify-center text-[#4B5563] text-sm gap-1 font-medium">
             <span>Somente 1 ponto de dado disponível</span>
-            <span className="text-xs text-slate-500">Selecione um intervalo maior de anos para ver a série histórica</span>
+            <span className="text-xs text-[#6B7280]">Selecione um intervalo maior de anos para ver a série histórica</span>
           </div>
         ) : (
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="ano" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="ano" stroke="#4B5563" tick={{ fontSize: 11, fill: '#1F2937' }} />
                 <YAxis
-                  stroke="#94a3b8"
-                  tick={{ fontSize: 11 }}
+                  stroke="#4B5563"
+                  tick={{ fontSize: 11, fill: '#1F2937' }}
                   tickFormatter={formatYTick}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
+                    backgroundColor: '#111827',
+                    borderColor: '#374151',
                     borderRadius: '12px',
-                    color: '#f8fafc',
+                    color: '#F9FAFB',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
                   }}
+                  itemStyle={{ color: '#F9FAFB', fontWeight: 600 }}
+                  labelStyle={{ color: '#D1D5DB', fontWeight: 600, marginBottom: '4px' }}
                   formatter={(val: any) => [
                     isRate ? formatPercent(val) : formatNumber(val),
                     variavel,
@@ -137,11 +142,11 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
                   type="monotone"
                   dataKey="valor"
                   name={variavel}
-                  stroke="#38bdf8"
-                  strokeWidth={3}
+                  stroke="#0E3B3A"
+                  strokeWidth={2.5}
                   connectNulls={false}
-                  dot={{ r: 4, fill: '#0284c7', stroke: '#38bdf8', strokeWidth: 2 }}
-                  activeDot={{ r: 7, fill: '#e0effe' }}
+                  dot={{ r: 4, fill: '#0E3B3A', stroke: '#FFFFFF', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#C29B38', stroke: '#FFFFFF', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -150,58 +155,62 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
       </div>
 
       {/* 2. Ranking Comparativo entre Municípios */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+      <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-base font-bold text-white">Ranking de Municípios</h3>
-            <p className="text-xs text-slate-400">Top 10 municípios no recorte selecionado</p>
+            <h3 className="font-serif text-lg font-normal text-[#0E3B3A]">Ranking de Municípios</h3>
+            <p className="text-xs text-[#4B5563] mt-0.5 font-medium">Top 10 municípios no recorte selecionado</p>
             {isEscolasSemEtapa && (
-              <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
-                <Info className="w-3.5 h-3.5 shrink-0" />
+              <p className="text-[11px] text-[#855B18] font-medium mt-1 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 shrink-0 text-[#B88228]" />
                 <span>Valores somados por etapa representam ofertas de ensino, não escolas únicas</span>
               </p>
             )}
           </div>
-          <span className="text-[11px] font-mono px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg shrink-0">
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 bg-[#F2EDE4] text-[#0E3B3A] border border-[#E2DDD3] rounded-md shrink-0">
             Comparativo
           </span>
         </div>
 
         {ranking.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm">
+          <div className="h-64 flex flex-col items-center justify-center text-[#4B5563] text-sm font-medium">
             Sem dados de municípios para o filtro selecionado
           </div>
         ) : (
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ranking} layout="vertical" margin={{ top: 5, right: 10, left: 35, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis
                   type="number"
-                  stroke="#94a3b8"
-                  tick={{ fontSize: 11 }}
+                  stroke="#4B5563"
+                  tick={{ fontSize: 11, fill: '#1F2937' }}
                   tickFormatter={formatYTick}
                 />
                 <YAxis
                   type="category"
                   dataKey="no_mun"
-                  stroke="#94a3b8"
-                  tick={{ fontSize: 11 }}
+                  stroke="#4B5563"
+                  tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 500 }}
                   width={85}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
+                    backgroundColor: '#111827',
+                    borderColor: '#374151',
                     borderRadius: '12px',
-                    color: '#f8fafc',
+                    color: '#F9FAFB',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
                   }}
+                  itemStyle={{ color: '#F9FAFB', fontWeight: 600 }}
+                  labelStyle={{ color: '#D1D5DB', fontWeight: 600, marginBottom: '4px' }}
                   formatter={(val: any) => [
                     isRate ? formatPercent(val) : formatNumber(val),
                     variavel,
                   ]}
                 />
-                <Bar dataKey="valor" radius={[0, 6, 6, 0]}>
+                <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
                   {ranking.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
                   ))}
@@ -212,28 +221,28 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
         )}
       </div>
 
-      {/* 3. TERCEIRO GRÁFICO: Quebra por Rede ou Etapa de Ensino (Obrigatório) */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+      {/* 3. TERCEIRO GRÁFICO: Quebra por Rede ou Etapa de Ensino */}
+      <div className="bg-white border border-[#E5E0D7] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4 gap-2">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-serif text-lg font-normal text-[#0E3B3A] flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-[#0E3B3A]" />
               <span>Quebra por {visao === 'rede' ? 'Rede' : 'Etapa'}</span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#4B5563] mt-0.5 font-medium">
               {visao === 'rede' ? 'Estadual, Municipal, Federal e Privada' : 'Distribuição entre etapas educacionais'}
             </p>
           </div>
 
           {/* Toggle de Alternância Rede vs Etapa */}
           {!isCensoDemografico && (
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700/80 text-xs">
+            <div className="flex bg-[#FAF8F5] p-1 rounded-xl border border-[#E5E0D7] text-xs">
               <button
                 onClick={() => onVisaoChange('rede')}
                 className={`px-2.5 py-1 rounded-lg font-medium transition ${
                   visao === 'rede'
-                    ? 'bg-sky-500 text-white shadow'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#0E3B3A] text-white shadow-xs'
+                    : 'text-[#4B5563] hover:text-[#0E3B3A]'
                 }`}
               >
                 Rede
@@ -242,8 +251,8 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
                 onClick={() => onVisaoChange('etapa')}
                 className={`px-2.5 py-1 rounded-lg font-medium transition ${
                   visao === 'etapa'
-                    ? 'bg-sky-500 text-white shadow'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#0E3B3A] text-white shadow-xs'
+                    : 'text-[#4B5563] hover:text-[#0E3B3A]'
                 }`}
               >
                 Etapa
@@ -253,15 +262,15 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
         </div>
 
         {isCensoDemografico ? (
-          <div className="h-64 flex flex-col items-center justify-center p-4 text-center bg-slate-900/40 rounded-xl border border-slate-700/30">
-            <Info className="w-7 h-7 text-amber-400 mb-2" />
-            <span className="text-xs font-semibold text-slate-200">Não aplicável a esta variável</span>
-            <span className="text-[11px] text-slate-400 mt-1 max-w-xs leading-relaxed">
+          <div className="h-64 flex flex-col items-center justify-center p-4 text-center bg-[#FAF8F5] rounded-xl border border-[#E5E0D7]">
+            <Info className="w-6 h-6 text-[#B88228] mb-2" />
+            <span className="text-xs font-semibold text-[#1C2B26]">Não aplicável a esta variável</span>
+            <span className="text-[11px] text-[#4B5563] mt-1 max-w-xs leading-relaxed font-medium">
               O indicador <strong>"{variavel}"</strong> pertence ao Censo Demográfico e não possui desagregação por rede ou etapa de ensino.
             </span>
           </div>
         ) : distribuicao.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm">
+          <div className="h-64 flex flex-col items-center justify-center text-[#4B5563] text-sm font-medium">
             Sem dados de {visao === 'rede' ? 'rede' : 'etapa'} para os filtros selecionados
           </div>
         ) : (
@@ -272,32 +281,36 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({
                 layout={visao === 'etapa' ? 'vertical' : 'horizontal'}
                 margin={visao === 'etapa' ? { top: 5, right: 10, left: 55, bottom: 5 } : { top: 10, right: 10, left: -10, bottom: 25 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 {visao === 'etapa' ? (
                   <>
-                    <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 10 }} tickFormatter={formatYTick} />
-                    <YAxis type="category" dataKey="categoria" stroke="#94a3b8" tick={{ fontSize: 10 }} width={110} />
+                    <XAxis type="number" stroke="#4B5563" tick={{ fontSize: 10, fill: '#1F2937' }} tickFormatter={formatYTick} />
+                    <YAxis type="category" dataKey="categoria" stroke="#4B5563" tick={{ fontSize: 10, fill: '#1F2937', fontWeight: 500 }} width={110} />
                   </>
                 ) : (
                   <>
-                    <XAxis dataKey="categoria" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} tickFormatter={formatYTick} />
+                    <XAxis dataKey="categoria" stroke="#4B5563" tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 500 }} />
+                    <YAxis stroke="#4B5563" tick={{ fontSize: 11, fill: '#1F2937' }} tickFormatter={formatYTick} />
                   </>
                 )}
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
+                    backgroundColor: '#111827',
+                    borderColor: '#374151',
                     borderRadius: '12px',
-                    color: '#f8fafc',
+                    color: '#F9FAFB',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
                   }}
+                  itemStyle={{ color: '#F9FAFB', fontWeight: 600 }}
+                  labelStyle={{ color: '#D1D5DB', fontWeight: 600, marginBottom: '4px' }}
                   formatter={(val: any) => [
                     isRate ? formatPercent(val) : formatNumber(val),
                     variavel,
                   ]}
                   labelFormatter={(lbl) => `${visao === 'rede' ? 'Rede' : 'Etapa'}: ${lbl}`}
                 />
-                <Bar dataKey="valor" radius={visao === 'etapa' ? [0, 6, 6, 0] : [6, 6, 0, 0]}>
+                <Bar dataKey="valor" radius={visao === 'etapa' ? [0, 4, 4, 0] : [4, 4, 0, 0]}>
                   {distribuicao.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={BAR_COLORS[(index + 2) % BAR_COLORS.length]} />
                   ))}

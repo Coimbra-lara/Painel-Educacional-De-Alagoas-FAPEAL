@@ -59,19 +59,6 @@ export async function fetchRanking(filters: FilterState, limite = 10): Promise<R
   return data;
 }
 
-export async function fetchMapa(filters: FilterState): Promise<RankingItem[]> {
-  const { data } = await axios.get<RankingItem[]>(`${API_BASE}/mapa`, {
-    params: {
-      variavel: filters.variavel,
-      municipio: filters.municipios.join(','),
-      anoInicio: filters.anoInicio,
-      anoFim: filters.anoFim,
-      rede: filters.rede,
-      etapa: filters.etapa,
-    },
-  });
-  return data;
-}
 
 export async function fetchDistribuicao(
   filters: FilterState,
