@@ -44,8 +44,8 @@ const needsInit = isPostgres || !fs.existsSync(dbFilePath);
 if (needsInit) {
   try {
     console.log('[Prisma Prep] Initializing database (prisma generate + db push)...');
-    execSync('npx prisma generate', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-    execSync('npx prisma db push --skip-generate', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+    execSync('npx prisma generate', { stdio: 'inherit', cwd: path.join(__dirname, '..'), env: process.env });
+    execSync('npx prisma db push --skip-generate', { stdio: 'inherit', cwd: path.join(__dirname, '..'), env: process.env });
     console.log('[Prisma Prep] Database initialized successfully.');
   } catch (err) {
     console.error('[Prisma Prep] Failed to initialize database:', err.message);
