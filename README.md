@@ -69,12 +69,12 @@ docker-compose up -d
 > Isso subirá um contêiner PostgreSQL rodando na porta `5432`.
 
 #### Passo 2: Instalar as dependências do Backend e Frontend
-Em um terminal, execute:
+No diretório raiz do projeto, execute:
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+npm install
 ```
+*(ou instale individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
 
 #### Passo 3: Configurar as variáveis de ambiente (`.env`)
 Na pasta `backend`, crie ou edite o arquivo `.env` para apontar para o PostgreSQL:
@@ -106,10 +106,12 @@ Abra **dois terminais separados**:
 Para rodar de forma simples e rápida sem a necessidade de instalar ou rodar o Docker:
 
 #### Passo 1: Instalar dependências no Backend e Frontend
+No diretório raiz do projeto, execute:
+
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+npm install
 ```
+*(ou instale individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
 
 #### Passo 2: Configurar as variáveis de ambiente (`.env`)
 Na pasta `backend`, certifique-se de que o arquivo `.env` está configurado para utilizar SQLite:
