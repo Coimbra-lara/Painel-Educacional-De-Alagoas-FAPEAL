@@ -1,18 +1,16 @@
 # Painel de Indicadores Educacionais de Alagoas
 
-Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma 145.028 linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadilhas do dado real.
+Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma 145.028 linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadirhas do dado real.
 
 No backend, uma API REST em Node.js, Express e TypeScript com Prisma ORM processa arquivos CSV via streaming — sem estourar memória mesmo em arquivos de 13MB —, persiste em PostgreSQL/SQLite otimizado com índices compostos, e responde agregações em menos de 1 segundo mesmo na base completa. No frontend, React, TypeScript e Tailwind CSS entregam filtros dinâmicos, gráficos interativos e um mapa coroplético de Alagoas, tudo pensado para lidar com escala desde o primeiro dia.
 
 ---
 
-### 💡 Por que a Aplicação já Abre com o CSV Exigido Carregado?
+### 💡 Inicialização Limpa no Localhost
 
-Para garantir uma **experiência de avaliação imediata e sem fricção**, a aplicação **já vem configurada e inicializada out-of-the-box com a base de dados no banco SQLite (`backend/prisma/dev.db`)**.
+Ao abrir a aplicação no navegador (`http://localhost:3000`), a página **sempre inicia na tela limpa de estado inicial ("Nenhum dado importado ainda")**, sem realizar requisições automáticas para puxar dados do banco de dados na inicialização.
 
-Dessa forma, ao clonar o repositório e executar a aplicação, o usuário avaliador visualiza instantaneamente no navegador (`http://localhost:3000`) todos os indicadores, gráficos de série temporal, mapa interativo de Alagoas e tabelas paginadas pré-carregados. 
-
-Ao mesmo tempo, o sistema preserva a funcionalidade completa de upload pelo modal da interface ("Importar Arquivo CSV"), permitindo enviar novos arquivos ou reimportar dados a qualquer momento com validação de registros duplicados e substituição transacional limpa.
+Para visualizar o painel interativo, o usuário realiza o upload do arquivo CSV diretamente pela interface (botão **"Importar CSV para começar"** ou **"Upload CSV"**), utilizando a amostra incluída na pasta `data/sample_alagoas_3534.csv` ou qualquer outro arquivo CSV válido.
 
 ---
 
@@ -21,9 +19,9 @@ Ao mesmo tempo, o sistema preserva a funcionalidade completa de upload pelo moda
 1. [Como Rodar o Projeto do Zero](#1-como-rodar-o-projeto-do-zero)
    - [1.1 Pré-requisitos](#11-pré-requisitos-)
    - [1.2 Clonar o repositório](#12-clonar-o-repositório-)
-   - [1.3 Rodar com Docker](#13-rodar-com-docker)
-   - [1.4 Guia de comandos para rodar em Docker](#14-guia-de-comandos-para-rodar-em-docker)
-   - [1.5 Rodar sem Docker](#15-rodar-sem-docker)
+   - [1.3 Rodar COM Docker](#13-rodar-com-docker)
+   - [1.4 Rodar SEM Docker (Local / Node.js + SQLite)](#14-rodar-sem-docker-local--nodejs--sqlite)
+   - [1.5 Importar o Arquivo CSV no Painel](#15-importar-o-arquivo-csv-no-painel)
 2. [Decisões de Tratamento dos Dados](#2-decisões-de-tratamento-dos-dados)
    - [2.1 Tratamento da Hierarquia em ensino_rede (4.1)](#21-tratamento-da-hierarquia-em-ensino_rede-41)
    - [2.2 Duplicidade em ensino_tipo na variável "Escolas" (4.2)](#22-duplicidade-em-ensino_tipo-na-variável-escolas-42)
@@ -42,7 +40,7 @@ Ao mesmo tempo, o sistema preserva a funcionalidade completa de upload pelo moda
 
 ## 1. Como Rodar o Projeto do Zero
 
-O projeto suporta duas formas principais de execução: **com Docker** (banco PostgreSQL) ou **sem Docker** (banco SQLite leve).
+O projeto suporta duas formas de execução: **COM Docker** (banco PostgreSQL em container) ou **SEM Docker** (execução local simples com banco SQLite).
 
 ### 1.1 Pré-requisitos ✅
 - **Node.js**: v18+ ou v20+ instalado
@@ -52,23 +50,60 @@ O projeto suporta duas formas principais de execução: **com Docker** (banco Po
 ### 1.2 Clonar o Repositório ✅
 
 ```bash
-git clone https://github.com/seu-usuario/alagoas-edu.git
-cd alagoas-edu
+git clone https://github.com/Coimbra-lara/csv.git
+cd csv
 ```
 
 ---
 
-### 1.3 Rodar com Docker
+### 1.3 Rodar COM Docker
 
-Para rodar a camada de banco de dados com PostgreSQL em contêiner Docker:
+Siga o passo a passo abaixo para rodar utilizando **Docker Compose** (PostgreSQL):
+
+#### Passo 1: Iniciar o banco PostgreSQL via Docker Compose
+No diretório raiz do projeto (`/`), execute:
 
 ```bash
 docker-compose up -d
 ```
+> Isso subirá um contêiner PostgreSQL rodando na porta `5432`.
+
+#### Passo 2: Instalar as dependências do Backend e Frontend
+Em um terminal, execute:
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+#### Passo 3: Configurar as variáveis de ambiente (`.env`)
+Na pasta `backend`, crie ou edite o arquivo `.env` para apontar para o PostgreSQL:
+
+```env
+PORT=3001
+DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/alagoas_edu?schema=public"
+```
+
+#### Passo 4: Iniciar o servidor Backend e o Frontend
+Abra **dois terminais separados**:
+
+- **Terminal 1 (Backend API na porta 3001):**
+  ```bash
+  cd backend
+  npm run dev
+  ```
+
+- **Terminal 2 (Frontend Dashboard na porta 3000):**
+  ```bash
+  cd frontend
+  npm run dev
+  ```
 
 ---
 
-### 1.4 Guia de comandos para rodar em Docker
+### 1.4 Rodar SEM Docker (Local / Node.js + SQLite)
+
+Para rodar de forma simples e rápida sem a necessidade de instalar ou rodar o Docker:
 
 #### Passo 1: Instalar dependências no Backend e Frontend
 ```bash
@@ -76,58 +111,47 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-#### Passo 2: Configurar o arquivo de ambiente para usar PostgreSQL
-Na pasta `backend`, crie ou edite o arquivo `.env`:
-
-```env
-PORT=3001
-DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/alagoas_edu?schema=public"
-```
-
-> **Nota:** O script `prepare-prisma.js` é executado automaticamente ao iniciar e ajusta o provider do Prisma para PostgreSQL.
-
-#### Passo 3: Iniciar a aplicação
-Em **dois terminais separados**:
-
-```bash
-# Terminal 1 — Backend API (porta 3001)
-cd backend
-npm run dev
-
-# Terminal 2 — Frontend Dashboard (porta 3000)
-cd frontend
-npm run dev
-```
-
-Acesse a interface no navegador em `http://localhost:3000`.
-
----
-
-### 1.5 Rodar sem Docker
-
-Para rodar de forma simples e rápida sem necessidade do Docker (utilizando SQLite out-of-the-box):
-
-#### Passo 1: Instalar dependências
-```bash
-cd backend && npm install
-cd ../frontend && npm install
-```
-
-#### Passo 2: Configurar o arquivo `.env` do Backend
-Na pasta `backend`, certifique-se de que o `.env` contém:
+#### Passo 2: Configurar as variáveis de ambiente (`.env`)
+Na pasta `backend`, certifique-se de que o arquivo `.env` está configurado para utilizar SQLite:
 
 ```env
 PORT=3001
 DATABASE_URL="file:./dev.db"
 ```
 
-#### Passo 3: Iniciar a aplicação
-Em **dois terminais separados**:
+#### Passo 3: Iniciar o servidor Backend e o Frontend
+Abra **dois terminais separados**:
 
-```bash
-# Terminal 1 — Backend (porta 3001)
-cd backend
-npm run dev
+- **Terminal 1 (Backend API na porta 3001):**
+  ```bash
+  cd backend
+  npm run dev
+  ```
+
+- **Terminal 2 (Frontend Dashboard na porta 3000):**
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+
+---
+
+### 1.5 Importar o Arquivo CSV no Painel
+
+Assim que as aplicações estiverem rodando em ambos os terminais:
+
+1. Acesse o navegador em **`http://localhost:3000`**.
+2. Você verá a **tela inicial zerada**: *"Nenhum dado importado ainda"*.
+3. Clique no botão **"Importar CSV para começar"** (ou no botão **"UPLOAD CSV"** no cabeçalho).
+4. No modal de upload, selecione o arquivo de dados. Você pode utilizar o arquivo de amostra pronto que acompanha o repositório em:
+   ```
+   data/sample_alagoas_3534.csv
+   ```
+   *(ou selecionar a base completa de 145 mil linhas em CSV)*.
+5. Clique em **"Processar e Importar CSV"**.
+6. Em instantes, o painel será alimentado e todos os gráficos, cards de KPI, mapa de Alagoas e tabela interativa serão exibidos automaticamente.
+
+---n dev
 
 # Terminal 2 — Frontend (porta 3000)
 cd frontend

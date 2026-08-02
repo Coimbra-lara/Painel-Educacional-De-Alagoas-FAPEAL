@@ -38,7 +38,8 @@ export function App() {
   });
 
   // undefined = still loading; 0 = empty DB; >0 = has data
-  const [totalMedidas, setTotalMedidas] = useState<number | undefined>(undefined);
+  // Initialized to 0 so localhost always opens on the empty state screen without fetching DB data on start
+  const [totalMedidas, setTotalMedidas] = useState<number>(0);
   const [isClearing, setIsClearing] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
@@ -154,9 +155,8 @@ export function App() {
     }
   }, [filters, pagina, tamanho]);
 
-  useEffect(() => {
-    loadOptions();
-  }, [loadOptions]);
+  // Do not fetch options or DB data on mount — localhost always starts on the empty state screen.
+  // Data will only be loaded after the user explicitly uploads a CSV file.
 
   // Only fire dashboard queries when we know the DB has records
   useEffect(() => {
