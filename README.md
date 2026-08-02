@@ -50,8 +50,8 @@ O projeto suporta duas formas de execução: **COM Docker** (banco PostgreSQL em
 ### 1.2 Clonar o Repositório ✅
 
 ```bash
-git clone https://github.com/Coimbra-lara/csv.git
-cd csv
+git clone https://github.com/Coimbra-lara/Painel-Educacional-De-Alagoas-FAPEAL.git
+cd Painel-Educacional-De-Alagoas-FAPEAL
 ```
 
 ---
