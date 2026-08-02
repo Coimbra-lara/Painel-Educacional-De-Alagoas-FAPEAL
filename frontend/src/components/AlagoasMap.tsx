@@ -18,15 +18,18 @@ export const AlagoasMap: React.FC<AlagoasMapProps> = ({ data, variavel, etapa, l
   const isRate = variavel.startsWith('Taxa');
   const isEscolasSemEtapa = variavel === 'Escolas' && (!etapa || etapa === 'Todas' || etapa === 'Todos');
 
-  // Fetch GeoJSON from IBGE Mesh API for Alagoas (UF 27) with clean degradation
+  // Fetch GeoJSON from local static file (0ms) with IBGE Mesh API fallback
   useEffect(() => {
     let isMounted = true;
     async function loadGeoJson() {
       try {
-        const response = await fetch(
-          'https://servicodados.ibge.gov.br/api/v3/malhas/estados/27?formato=application/vnd.geo+json&intrarregiao=municipio&resolucao=2'
-        );
-        if (!response.ok) throw new Error('Falha na API IBGE');
+        let response = await fetch('/alagoas-municipios.json');
+        if (!response.ok) {
+          response = await fetch(
+            'https://servicodados.ibge.gov.br/api/v3/malhas/estados/27?formato=application/vnd.geo+json&intrarregiao=municipio&resolucao=2'
+          );
+        }
+        if (!response.ok) throw new Error('Falha ao carregar malha geográfica');
         const json = await response.json();
         if (isMounted) {
           setGeoJson(json);
