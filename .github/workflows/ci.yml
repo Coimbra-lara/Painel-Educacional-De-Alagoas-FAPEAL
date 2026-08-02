@@ -20,10 +20,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: Install Monorepo Dependencies
-        run: npm ci
+      - name: Backend & Monorepo - Install Dependencies
+        run: |
+          rm -rf node_modules package-lock.json backend/node_modules backend/package-lock.json frontend/node_modules frontend/package-lock.json
+          npm install
+          cd backend && rm -rf node_modules package-lock.json && npm install
 
       - name: Backend - Prisma Generate & Push Schema
         run: |
