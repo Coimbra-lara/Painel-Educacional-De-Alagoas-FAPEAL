@@ -1,6 +1,6 @@
 # Painel de Indicadores Educacionais de Alagoas
 
-Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma até 145 mil linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadirhas do dado real.
+Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma 145.028 linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadilhas do dado real.
 
 No backend, uma API REST em Node.js, Express e TypeScript com Prisma ORM processa arquivos CSV via streaming — sem estourar memória mesmo em arquivos de 13MB —, persiste em PostgreSQL/SQLite otimizado com índices compostos, e responde agregações em menos de 1 segundo mesmo na base completa. No frontend, React, TypeScript e Tailwind CSS entregam filtros dinâmicos, gráficos interativos e um mapa coroplético de Alagoas, tudo pensado para lidar com escala desde o primeiro dia.
 
@@ -10,7 +10,7 @@ No backend, uma API REST em Node.js, Express e TypeScript com Prisma ORM process
 
 Ao abrir a aplicação no navegador (`http://localhost:3000`), a página **sempre inicia na tela limpa de estado inicial ("Nenhum dado importado ainda")**, sem realizar requisições automáticas para puxar dados do banco de dados na inicialização.
 
-Para visualizar o painel interativo, o usuário realiza o upload do arquivo CSV diretamente pela interface (botão **"Importar CSV para começar"** ou **"Upload CSV"**), utilizando a amostra incluída na pasta `data/sample_alagoas_3534.csv` ou qualquer outro arquivo CSV válido.
+Para visualizar o painel interativo, o usuário realiza o upload do arquivo CSV diretamente pela interface (botão **"Importar CSV para começar"** ou **"Upload CSV"**), utilizando a amostra pronta que acompanha o repositório em `data/sample_alagoas_3534.csv` ou qualquer outro arquivo CSV válido de indicadores educacionais.
 
 ---
 
@@ -19,7 +19,7 @@ Para visualizar o painel interativo, o usuário realiza o upload do arquivo CSV 
 1. [Como Rodar o Projeto do Zero](#1-como-rodar-o-projeto-do-zero)
    - [1.1 Pré-requisitos](#11-pré-requisitos-)
    - [1.2 Clonar o repositório](#12-clonar-o-repositório-)
-   - [1.3 Rodar COM Docker](#13-rodar-com-docker)
+   - [1.3 Rodar COM Docker (PostgreSQL)](#13-rodar-com-docker-postgresql)
    - [1.4 Rodar SEM Docker (Local / Node.js + SQLite)](#14-rodar-sem-docker-local--nodejs--sqlite)
    - [1.5 Importar o Arquivo CSV no Painel](#15-importar-o-arquivo-csv-no-painel)
 2. [Decisões de Tratamento dos Dados](#2-decisões-de-tratamento-dos-dados)
@@ -56,12 +56,10 @@ cd Painel-Educacional-De-Alagoas-FAPEAL
 
 ---
 
-### 1.3 Rodar COM Docker
-
-Siga o passo a passo abaixo para rodar utilizando **Docker Compose** (PostgreSQL):
+### 1.3 Rodar COM Docker (PostgreSQL)
 
 #### Passo 1: Iniciar o banco PostgreSQL via Docker Compose
-No diretório raiz do projeto (`/`), execute:
+No diretório raiz do projeto, execute:
 
 ```bash
 docker-compose up -d
@@ -72,12 +70,12 @@ docker-compose up -d
 No diretório raiz do projeto, execute:
 
 ```bash
-npm install
+npm run install:all
 ```
-*(ou instale individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
+*(ou instale em cada pasta individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
 
 #### Passo 3: Configurar as variáveis de ambiente (`.env`)
-Na pasta `backend`, crie ou edite o arquivo `.env` para apontar para o PostgreSQL:
+Na pasta `backend`, crie ou edite o arquivo `.env`:
 
 ```env
 PORT=3001
@@ -109,12 +107,12 @@ Para rodar de forma simples e rápida sem a necessidade de instalar ou rodar o D
 No diretório raiz do projeto, execute:
 
 ```bash
-npm install
+npm run install:all
 ```
-*(ou instale individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
+*(ou instale em cada pasta individualmente com `cd backend && npm install` e `cd ../frontend && npm install`)*.
 
 #### Passo 2: Configurar as variáveis de ambiente (`.env`)
-Na pasta `backend`, certifique-se de que o arquivo `.env` está configurado para utilizar SQLite:
+Na pasta `backend`, crie ou edite o arquivo `.env`:
 
 ```env
 PORT=3001
@@ -143,7 +141,7 @@ Abra **dois terminais separados**:
 Assim que as aplicações estiverem rodando em ambos os terminais:
 
 1. Acesse o navegador em **`http://localhost:3000`**.
-2. Você verá a **tela inicial zerada**: *"Nenhum dado importado ainda"*.
+2. Você verá a **tela inicial limpa**: *"Nenhum dado importado ainda"*.
 3. Clique no botão **"Importar CSV para começar"** (ou no botão **"UPLOAD CSV"** no cabeçalho).
 4. No modal de upload, selecione o arquivo de dados. Você pode utilizar o arquivo de amostra pronto que acompanha o repositório em:
    ```
@@ -152,13 +150,6 @@ Assim que as aplicações estiverem rodando em ambos os terminais:
    *(ou selecionar a base completa de 145 mil linhas em CSV)*.
 5. Clique em **"Processar e Importar CSV"**.
 6. Em instantes, o painel será alimentado e todos os gráficos, cards de KPI, mapa de Alagoas e tabela interativa serão exibidos automaticamente.
-
----n dev
-
-# Terminal 2 — Frontend (porta 3000)
-cd frontend
-npm run dev
-```
 
 Navegue até `http://localhost:3000`.
 
