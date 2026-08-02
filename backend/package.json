@@ -5,9 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "prisma:prep": "node scripts/prepare-prisma.js",
-    "prisma:generate": "npm run prisma:prep && prisma generate",
-    "prisma:push": "npm run prisma:prep && prisma db push",
-    "dev": "npm run prisma:push && ts-node-dev --respawn --transpile-only src/server.ts",
+    "prisma:generate": "npm run prisma:prep && npx prisma generate",
+    "prisma:push": "npm run prisma:prep && npx prisma db push",
+    "dev": "npm run prisma:push && npx ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "npm run prisma:generate && tsc",
     "start": "node dist/server.js",
     "test": "vitest run"
