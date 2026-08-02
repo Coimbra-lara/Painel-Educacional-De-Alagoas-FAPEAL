@@ -31,5 +31,3 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Test directories
-frontend/testar/
