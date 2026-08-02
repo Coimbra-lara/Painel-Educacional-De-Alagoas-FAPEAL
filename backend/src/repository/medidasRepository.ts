@@ -18,6 +18,11 @@ export function invalidarCacheAnos() {
   anoMaximoCache = null;
 }
 
+export async function limparTodosDados(): Promise<number> {
+  const result = await prisma.medida.deleteMany({});
+  return result.count;
+}
+
 export interface FilterParams {
   municipios?: string[];
   ano?: number;

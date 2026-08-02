@@ -11,6 +11,7 @@ import {
   getDistribuicao,
   getTabelaDados,
   invalidarCacheAnos,
+  limparTodosDados,
 } from '../repository/medidasRepository';
 
 export const medidasRouter = Router();
@@ -168,6 +169,17 @@ medidasRouter.get('/dados', async (req: Request, res: Response, next: NextFuncti
     const params = parseQueryParams(req);
     const tabela = await getTabelaDados(params);
     res.json(tabela);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/dados — limpa todos os registros do banco
+medidasRouter.delete('/dados', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const deleted = await limparTodosDados();
+    invalidarCacheAnos();
+    res.json({ deletedCount: deleted });
   } catch (error) {
     next(error);
   }

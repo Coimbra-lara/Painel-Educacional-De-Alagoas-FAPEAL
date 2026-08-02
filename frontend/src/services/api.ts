@@ -107,3 +107,8 @@ export async function uploadCsv(file: File): Promise<UploadReport> {
   });
   return data;
 }
+
+export async function clearData(): Promise<{ deletedCount: number }> {
+  const { data } = await axios.delete<{ deletedCount: number }>(`${API_BASE}/dados`);
+  return data;
+}

@@ -13,6 +13,7 @@ import {
   fetchRanking,
   fetchDistribuicao,
   fetchTabela,
+  clearData,
 } from './services/api.js';
 import {
   FiltrosResponse,
@@ -23,6 +24,7 @@ import {
   DistribuicaoItem,
   TabelaData,
 } from './types/index.js';
+import { Upload, FileSpreadsheet } from 'lucide-react';
 import './index.css';
 
 export function App() {
@@ -34,6 +36,10 @@ export function App() {
     etapas: [],
     variaveis: [],
   });
+
+  // undefined = still loading; 0 = empty DB; >0 = has data
+  const [totalMedidas, setTotalMedidas] = useState<number | undefined>(undefined);
+  const [isClearing, setIsClearing] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     municipios: [],
@@ -68,6 +74,7 @@ export function App() {
     try {
       const opts = await fetchFiltros();
       setFiltrosOptions(opts);
+      setTotalMedidas(opts.totalMedidas ?? 0);
       // Sync active variavel: if the current selection is missing from the bank,
       // pick the first one returned (keeps the UI consistent with available data).
       if (opts.variaveis.length > 0) {
@@ -79,6 +86,7 @@ export function App() {
       }
     } catch (err: any) {
       console.warn('Backend sem dados iniciais. Faça upload do CSV de amostra.');
+      setTotalMedidas(0);
     }
   }, []);
 
@@ -150,13 +158,18 @@ export function App() {
     loadOptions();
   }, [loadOptions]);
 
+  // Only fire dashboard queries when we know the DB has records
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    if (totalMedidas !== undefined && totalMedidas > 0) {
+      loadDashboardData();
+    }
+  }, [loadDashboardData, totalMedidas]);
 
   useEffect(() => {
-    loadTabelaData();
-  }, [loadTabelaData]);
+    if (totalMedidas !== undefined && totalMedidas > 0) {
+      loadTabelaData();
+    }
+  }, [loadTabelaData, totalMedidas]);
 
   const handleFilterChange = (updated: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...updated }));
@@ -180,6 +193,7 @@ export function App() {
     try {
       const opts = await fetchFiltros();
       setFiltrosOptions(opts);
+      setTotalMedidas(opts.totalMedidas ?? 0);
       setFilters({
         municipios: [],
         anoInicio: undefined,
@@ -197,65 +211,134 @@ export function App() {
     }
   };
 
+  const handleClearData = async () => {
+    setIsClearing(true);
+    try {
+      await clearData();
+      // Reset all state to empty — DB is now clean
+      setTotalMedidas(0);
+      setFiltrosOptions({ municipios: [], anos: [], redes: [], etapas: [], variaveis: [] });
+      setIndicadores(null);
+      setSeries([]);
+      setRanking([]);
+      setDistribuicao([]);
+      setMapaData([]);
+      setTabela(null);
+      setErrorMsg(null);
+      setFilters({
+        municipios: [],
+        anoInicio: undefined,
+        anoFim: undefined,
+        rede: undefined,
+        etapa: undefined,
+        variavel: 'Matrícula',
+      });
+      setPagina(1);
+    } catch (err) {
+      console.error('Erro ao limpar dados:', err);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  // Loading state — still checking DB (totalMedidas === undefined)
+  const isLoadingInitial = totalMedidas === undefined;
+  // Empty state — DB has no records at all
+  const isEmpty = totalMedidas === 0;
+
   return (
     <div className="min-h-screen bg-[#F7F5F0] text-[#1E293B] flex flex-col font-sans selection:bg-[#0F5237] selection:text-white">
       <Header
         onOpenUpload={() => setIsUploadOpen(true)}
+        onClearData={handleClearData}
+        isClearing={isClearing}
         totalRows={filtrosOptions.totalMedidas}
         municipiosCount={filtrosOptions.municipios.length}
+        hasData={!isEmpty && !isLoadingInitial}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
-        {errorMsg && (
-          <div className="p-4 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl text-[#92400E] text-xs sm:text-sm flex items-center justify-between shadow-xs">
-            <span>{errorMsg}</span>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8">
+        {isLoadingInitial ? (
+          // Initial loading skeleton — checking DB
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-[#D8EEE0] border-t-[#0F5237] animate-spin" />
+            <p className="text-sm text-[#64748B]">Verificando banco de dados...</p>
+          </div>
+        ) : isEmpty ? (
+          // Empty state — no data in DB
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6 animate-fade-in">
+            <div className="p-6 bg-[#ECF7F0] border border-[#D8EEE0] rounded-3xl shadow-sm">
+              <FileSpreadsheet className="w-16 h-16 text-[#0F5237] mx-auto" />
+            </div>
+            <div className="space-y-2 max-w-md">
+              <h2 className="text-2xl font-semibold text-[#0F5237]">Nenhum dado importado ainda</h2>
+              <p className="text-sm text-[#64748B] leading-relaxed">
+                Faça upload de um arquivo CSV com os dados educacionais dos municípios de Alagoas para começar a visualizar o painel.
+              </p>
+            </div>
             <button
               onClick={() => setIsUploadOpen(true)}
-              className="px-3.5 py-1.5 bg-[#0F5237] hover:bg-[#0B412B] text-white text-xs uppercase tracking-wider font-medium rounded-lg transition"
+              className="flex items-center gap-2.5 px-6 py-3 bg-[#0F5237] hover:bg-[#0B412B] text-white font-semibold text-sm rounded-xl shadow-md transition-all duration-200 active:scale-[0.98]"
             >
-              Fazer Upload CSV
+              <Upload className="w-5 h-5" />
+              Importar CSV para começar
             </button>
           </div>
+        ) : (
+          // Dashboard — has data
+          <div className="space-y-8">
+            {errorMsg && (
+              <div className="p-4 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl text-[#92400E] text-xs sm:text-sm flex items-center justify-between shadow-xs">
+                <span>{errorMsg}</span>
+                <button
+                  onClick={() => setIsUploadOpen(true)}
+                  className="px-3.5 py-1.5 bg-[#0F5237] hover:bg-[#0B412B] text-white text-xs uppercase tracking-wider font-medium rounded-lg transition"
+                >
+                  Fazer Upload CSV
+                </button>
+              </div>
+            )}
+
+            <FilterBar
+              options={filtrosOptions}
+              filters={filters}
+              onChange={handleFilterChange}
+              onReset={handleResetFilters}
+            />
+
+            <KpiCards data={indicadores} loading={loadingIndicadores} etapa={filters.etapa} variavel={filters.variavel} />
+
+            <ChartsSection
+              series={series}
+              ranking={ranking}
+              distribuicao={distribuicao}
+              variavel={filters.variavel}
+              etapa={filters.etapa}
+              loading={loadingCharts}
+              visao={visao}
+              onVisaoChange={setVisao}
+            />
+
+            <AlagoasMap
+              data={mapaData}
+              variavel={filters.variavel}
+              etapa={filters.etapa}
+              loading={loadingCharts}
+            />
+
+            <DataTable
+              data={tabela}
+              loading={loadingTabela}
+              pagina={pagina}
+              tamanho={tamanho}
+              onPageChange={setPagina}
+              onTamanhoChange={(t) => {
+                setTamanho(t);
+                setPagina(1);
+              }}
+            />
+          </div>
         )}
-
-        <FilterBar
-          options={filtrosOptions}
-          filters={filters}
-          onChange={handleFilterChange}
-          onReset={handleResetFilters}
-        />
-
-        <KpiCards data={indicadores} loading={loadingIndicadores} etapa={filters.etapa} variavel={filters.variavel} />
-
-        <ChartsSection
-          series={series}
-          ranking={ranking}
-          distribuicao={distribuicao}
-          variavel={filters.variavel}
-          etapa={filters.etapa}
-          loading={loadingCharts}
-          visao={visao}
-          onVisaoChange={setVisao}
-        />
-
-        <AlagoasMap
-          data={mapaData}
-          variavel={filters.variavel}
-          etapa={filters.etapa}
-          loading={loadingCharts}
-        />
-
-        <DataTable
-          data={tabela}
-          loading={loadingTabela}
-          pagina={pagina}
-          tamanho={tamanho}
-          onPageChange={setPagina}
-          onTamanhoChange={(t) => {
-            setTamanho(t);
-            setPagina(1);
-          }}
-        />
       </main>
 
       <footer className="bg-[#E2E8F0]/60 border-t border-[#E2E8F0] py-6 text-center text-xs text-[#64748B] font-sans">
