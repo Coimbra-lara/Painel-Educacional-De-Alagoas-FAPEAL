@@ -173,6 +173,14 @@ Esta seção documenta as regras de negócio e rigor matemático adotados para t
 - **Decisão**: O CSV bruto é lido via streaming (`csv-parse`), validado via `zod` e inserido em lotes de 3.000 registros com Prisma. A API executa agregações sob demanda otimizadas por índices compostos `(ano, variavel, ensino_rede, ensino_tipo)` e `(co_mun, ano)`.
 
 ---
+💡 Detecção e rejeição de linhas duplicadas
+
+Além das validações exigidas pelo desafio (cabeçalho, tipos de coluna, ano fora do intervalo, valor não numérico), a aplicação identifica e rejeita linhas duplicadas dentro de um mesmo arquivo CSV.
+
+Uma linha é considerada duplicada quando a combinação de co_mun + ano + fonte + variavel + ensino_rede + ensino_tipo já apareceu anteriormente no mesmo arquivo. Nesse caso, apenas a primeira ocorrência é importada; as ocorrências seguintes da mesma combinação são rejeitadas e contabilizadas no relatório de importação (linhas rejeitadas, com o motivo "registro duplicado").
+
+Essa decisão evita que uma mesma medida seja contada mais de uma vez durante agregações e cálculos (somas e médias ponderadas), o que geraria números inflados e incorretos no dashboard — o mesmo tipo de problema que a hierarquia de ensino_rede e ensino_tipo já trata na seção 4 do desafio, aplicado agora à integridade do arquivo de entrada em si.
+---
 
 ## 3. Conferência dos Números
 
