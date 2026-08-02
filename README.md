@@ -7,7 +7,7 @@
 ![Prisma](https://img.shields.io/badge/Prisma-v5+-indigo.svg)
 ![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v3+-38bdf8.svg)
 
-Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma 145.028 linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadilhas do dado real.
+Dados educacionais reais vêm com inconsistências reais: redes que se sobrepõem, escolas contadas duas vezes, percentuais que não podem ser somados. Este projeto nasceu para enfrentar exatamente isso — uma aplicação full-stack que transforma linhas de dados brutos dos 102 municípios de Alagoas (2007–2025) em um dashboard confiável, sem inflar números nem esconder as armadilhas do dado real.
 
 No backend, uma API REST em Node.js, Express e TypeScript com Prisma ORM processa arquivos CSV via streaming — sem estourar memória mesmo em arquivos de 13MB —, persiste em PostgreSQL/SQLite otimizado com índices compostos, e responde agregações em menos de 1 segundo mesmo na base completa. No frontend, React, TypeScript e Tailwind CSS entregam filtros dinâmicos, gráficos interativos e um mapa coroplético de Alagoas, tudo pensado para lidar com escala desde o primeiro dia.
 
@@ -264,7 +264,7 @@ model Medida {
 
 ---
 
-### Análise de Performance (Base Completa - 145.028 Registros)
+### Análise de Performance (Amostra contendo 145.028 Registros)
 
 Tempos de resposta medidos em 10 execuções consecutivas por endpoint:
 
