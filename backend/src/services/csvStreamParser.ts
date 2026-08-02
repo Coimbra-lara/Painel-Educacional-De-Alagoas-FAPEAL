@@ -21,6 +21,8 @@ export interface UploadReport {
   linhasImportadas: number;
   linhasRejeitadas: number;
   erros: { linha: number; motivo: string }[];
+  duplicados?: number;
+  mensagem?: string;
 }
 
 export const EXPECTED_HEADER = [
@@ -42,135 +44,137 @@ export async function parseAndInsertCsvStream(
     await prisma.medida.deleteMany({});
   }
 
-  return new Promise((resolve, reject) => {
-    let headerValidated = false;
-    let lineNumber = 0;
-    let linesImported = 0;
-    let linesRejected = 0;
-    const errors: { linha: number; motivo: string }[] = [];
-
-    const BATCH_SIZE = 3000;
-    let batch: MedidaRow[] = [];
-
-    const parser = parse({
-      delimiter: ',',
+  const parser = inputStream.pipe(
+    parse({
+      delimiter: [',', ';'],
+      bom: true,
       trim: true,
       skip_empty_lines: true,
       relax_column_count: true,
-    });
+    })
+  );
 
-    const flushBatch = async () => {
-      if (batch.length === 0) return;
-      const currentBatch = batch;
-      batch = [];
-      await prisma.medida.createMany({
-        data: currentBatch,
-      });
-      linesImported += currentBatch.length;
+  let headerValidated = false;
+  let lineNumber = 0;
+  let linesImported = 0;
+  let linesRejected = 0;
+  let duplicadosCount = 0;
+  const errors: { linha: number; motivo: string }[] = [];
+  const seenKeys = new Set<string>();
+
+  const BATCH_SIZE = 1000;
+  let batch: MedidaRow[] = [];
+
+  const flushBatch = async () => {
+    if (batch.length === 0) return;
+    const currentBatch = batch;
+    batch = [];
+    await prisma.medida.createMany({
+      data: currentBatch,
+    });
+    linesImported += currentBatch.length;
+  };
+
+  try {
+    for await (const record of parser) {
+      lineNumber++;
+
+      // 1. Validate Header
+      if (!headerValidated) {
+        headerValidated = true;
+        const cleanedRecord = record.map((col: string) =>
+          col.trim().replace(/^\ufeff/, '').toLowerCase()
+        );
+
+        const headerMatches =
+          cleanedRecord.length === EXPECTED_HEADER.length &&
+          cleanedRecord.every(
+            (col: string, idx: number) => col === EXPECTED_HEADER[idx].toLowerCase()
+          );
+
+        if (!headerMatches) {
+          throw new Error(
+            `Cabeçalho CSV inválido. Esperado: '${EXPECTED_HEADER.join(',')}', recebido: '${record.join(',')}'`
+          );
+        }
+        continue; // Skip processing the header row as data
+      }
+
+      // 2. Row record validation
+      if (record.length < 8) {
+        linesRejected++;
+        if (errors.length < 100) {
+          errors.push({ linha: lineNumber, motivo: 'Linha com número de colunas insuficiente' });
+        }
+        continue;
+      }
+
+      const [co_mun, no_mun, rawAno, fonte, variavel, ensino_rede, ensino_tipo, rawValor] = record;
+
+      const parsedAno = parseInt(String(rawAno).trim(), 10);
+      const parsedValor = parseFloat(String(rawValor).replace(',', '.').trim());
+
+      const rowData = {
+        co_mun: String(co_mun).trim(),
+        no_mun: String(no_mun).trim(),
+        ano: parsedAno,
+        fonte: String(fonte).trim(),
+        variavel: String(variavel).trim(),
+        ensino_rede: String(ensino_rede).trim(),
+        ensino_tipo: String(ensino_tipo).trim(),
+        valor: parsedValor,
+      };
+
+      const validation = MedidaRowSchema.safeParse(rowData);
+
+      if (!validation.success) {
+        linesRejected++;
+        if (errors.length < 100) {
+          const msg = validation.error.issues.map((i) => i.message).join('; ');
+          errors.push({ linha: lineNumber, motivo: msg });
+        }
+        continue;
+      }
+
+      const validRow = validation.data;
+      const rowKey = `${validRow.co_mun}|${validRow.ano}|${validRow.fonte.toLowerCase()}|${validRow.variavel.toLowerCase()}|${validRow.ensino_rede.toLowerCase()}|${validRow.ensino_tipo.toLowerCase()}`;
+
+      if (seenKeys.has(rowKey)) {
+        linesRejected++;
+        duplicadosCount++;
+        if (errors.length < 100) {
+          errors.push({ linha: lineNumber, motivo: 'Registro duplicado' });
+        }
+        continue;
+      }
+
+      seenKeys.add(rowKey);
+      batch.push(validRow);
+
+      if (batch.length >= BATCH_SIZE) {
+        await flushBatch();
+      }
+    }
+
+    if (headerValidated) {
+      await flushBatch();
+    }
+
+    const dataLinesRead = lineNumber > 0 ? lineNumber - 1 : 0;
+    const report: UploadReport = {
+      linhasLidas: dataLinesRead,
+      linhasImportadas: linesImported,
+      linhasRejeitadas: linesRejected,
+      erros: errors,
     };
 
-    parser.on('readable', async () => {
-      let record;
-      while ((record = parser.read()) !== null) {
-        lineNumber++;
+    if (duplicadosCount > 0) {
+      report.duplicados = duplicadosCount;
+      report.mensagem = 'Arquivo contém dados duplicados. Os registros duplicados não foram importados.';
+    }
 
-        // 1. Validate Header
-        if (!headerValidated) {
-          headerValidated = true;
-          const headerMatches =
-            record.length === EXPECTED_HEADER.length &&
-            record.every((col: string, idx: number) => col.trim().toLowerCase() === EXPECTED_HEADER[idx].toLowerCase());
-
-          if (!headerMatches) {
-            parser.destroy();
-            return reject(
-              new Error(
-                `Cabeçalho CSV inválido. Esperado: '${EXPECTED_HEADER.join(',')}', recebido: '${record.join(',')}'`
-              )
-            );
-          }
-          continue; // Skip processing the header row as data
-        }
-
-        // 2. Row record validation
-        if (record.length < 8) {
-          linesRejected++;
-          if (errors.length < 100) {
-            errors.push({ linha: lineNumber, motivo: 'Linha com número de colunas insuficiente' });
-          }
-          continue;
-        }
-
-        const [co_mun, no_mun, rawAno, fonte, variavel, ensino_rede, ensino_tipo, rawValor] = record;
-
-        const parsedAno = parseInt(rawAno, 10);
-        const parsedValor = parseFloat(rawValor);
-
-        const rowData = {
-          co_mun: String(co_mun).trim(), // Preserved strictly as string
-          no_mun: String(no_mun).trim(),
-          ano: parsedAno,
-          fonte: String(fonte).trim(),
-          variavel: String(variavel).trim(),
-          ensino_rede: String(ensino_rede).trim(),
-          ensino_tipo: String(ensino_tipo).trim(),
-          valor: parsedValor,
-        };
-
-        const validation = MedidaRowSchema.safeParse(rowData);
-
-        if (!validation.success) {
-          linesRejected++;
-          if (errors.length < 100) {
-            const msg = validation.error.issues.map((i) => i.message).join('; ');
-            errors.push({ linha: lineNumber, motivo: msg });
-          }
-          continue;
-        }
-
-        batch.push(validation.data);
-
-        if (batch.length >= BATCH_SIZE) {
-          parser.pause();
-          try {
-            await flushBatch();
-          } catch (err: any) {
-            parser.destroy();
-            return reject(err);
-          }
-          parser.resume();
-        }
-      }
-    });
-
-    parser.on('error', (err) => {
-      reject(new Error(`Erro ao ler arquivo CSV: ${err.message}`));
-    });
-
-    parser.on('end', async () => {
-      try {
-        if (!headerValidated) {
-          // File was empty
-          return resolve({
-            linhasLidas: 0,
-            linhasImportadas: 0,
-            linhasRejeitadas: 0,
-            erros: [],
-          });
-        }
-        await flushBatch();
-        const dataLinesRead = lineNumber > 0 ? lineNumber - 1 : 0;
-        resolve({
-          linhasLidas: dataLinesRead,
-          linhasImportadas: linesImported,
-          linhasRejeitadas: linesRejected,
-          erros: errors,
-        });
-      } catch (err: any) {
-        reject(err);
-      }
-    });
-
-    inputStream.pipe(parser);
-  });
+    return report;
+  } catch (err: any) {
+    throw new Error(err.message || 'Erro ao processar CSV');
+  }
 }

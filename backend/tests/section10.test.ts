@@ -181,6 +181,28 @@ describe('Seção 10: Testes de Validação Obrigatória de Dados Educacionais',
       expect(count1).toBe(3534);
       expect(count2).toBe(3534); // Não duplicou para 7068
     });
+
+    it('CASO 6: CSV com registros duplicados no próprio arquivo — ignora os duplicados e retorna mensagem e total de duplicados', async () => {
+      const csvContent = [
+        'co_mun,no_mun,ano,fonte,variavel,ensino_rede,ensino_tipo,valor',
+        '2704302,Maceió,2023,censo_escolar,Matrícula,Total,Educação Infantil,24000.0',
+        '2704302,Maceió,2023,censo_escolar,Matrícula,Total,Educação Infantil,24000.0', // Duplicado 1
+        '2704302,Maceió,2023,censo_escolar,Matrícula,Estadual,Ensino Fundamental,29270.0',
+        '2704302,Maceió,2023,censo_escolar,Matrícula,Total,Educação Infantil,24000.0', // Duplicado 2
+      ].join('\n');
+
+      const stream = Readable.from([csvContent]);
+      const report = await parseAndInsertCsvStream(stream, true);
+
+      expect(report.linhasLidas).toBe(4);
+      expect(report.linhasImportadas).toBe(2);
+      expect(report.linhasRejeitadas).toBe(2);
+      expect(report.duplicados).toBe(2);
+      expect(report.mensagem).toBe('Arquivo contém dados duplicados. Os registros duplicados não foram importados.');
+
+      const insertedCount = await prisma.medida.count();
+      expect(insertedCount).toBe(2);
+    });
   });
 
   describe('Diferenciação Estrita entre Valor ZERO e AUSÊNCIA DE DADOS', () => {

@@ -37,6 +37,13 @@ export interface IndicadoresResult {
   variacaoMatriculas: number | null;
   /** Human-readable label of the period used for the rate cards, e.g. "2010–2021" or "2023" */
   periodoReferencia: string | null;
+  /** Reference year used for stock cards (Matrícula, Escolas) — the latest available year in the filtered range */
+  anoReferenciaMatriculas: number | null;
+  anoReferenciaEscolas: number | null;
+  /** Scope context for card descriptions */
+  qtdMunicipios: number;
+  redeFiltrada: string;
+  etapaFiltrada: string;
 }
 
 export interface SerieItem {
@@ -238,10 +245,36 @@ export async function aggregateRate(
   return totalWeight > 0 ? Number((weightedSum / totalWeight).toFixed(2)) : null;
 }
 
-export async function aggregateCount(
+/**
+ * For stock variables (Matrícula, Escolas), find the latest year available
+ * within the filtered range. Returns undefined if no data is found.
+ */
+async function getAnoReferenciaEstoque(
   whereBase: any,
   variavel: string,
   params: FilterParams
+): Promise<number | undefined> {
+  const whereStock = {
+    ...whereBase,
+    variavel,
+    ensino_rede:
+      params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total',
+  };
+
+  const row = await prisma.medida.findFirst({
+    where: whereStock,
+    select: { ano: true },
+    orderBy: { ano: 'desc' },
+  });
+
+  return row?.ano;
+}
+
+export async function aggregateCount(
+  whereBase: any,
+  variavel: string,
+  params: FilterParams,
+  anoRef?: number
 ): Promise<number | null> {
   const isCenso = ehVariavelCensoDemografico(variavel);
   const whereCount = { ...whereBase, variavel };
@@ -254,6 +287,24 @@ export async function aggregateCount(
     (!whereCount.ensino_rede || whereCount.ensino_rede === 'Todas' || whereCount.ensino_rede === 'Todos')
   ) {
     whereCount.ensino_rede = params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total';
+  }
+
+  // For stock variables across a multi-year range, pin to a single reference year
+  const isStockMultiYear =
+    !isCenso &&
+    (variavel === 'Matrícula' || variavel === 'Escolas') &&
+    (anoRef !== undefined ||
+      (params.anoInicio !== undefined &&
+        params.anoFim !== undefined &&
+        params.anoInicio !== params.anoFim) ||
+      (params.anoInicio === undefined && params.anoFim === undefined));
+
+  if (isStockMultiYear) {
+    const effectiveAnoRef =
+      anoRef ?? (await getAnoReferenciaEstoque(whereBase, variavel, params));
+    if (effectiveAnoRef !== undefined) {
+      whereCount.ano = effectiveAnoRef;
+    }
   }
 
   const agg = await prisma.medida.aggregate({
@@ -279,6 +330,12 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
     periodoReferencia = `até ${params.anoFim}`;
   }
 
+  // For stock variables, find the reference year (latest available in the filtered range)
+  const [anoReferenciaMatriculas, anoReferenciaEscolas] = await Promise.all([
+    getAnoReferenciaEstoque(whereBase, 'Matrícula', params),
+    getAnoReferenciaEstoque(whereBase, 'Escolas', params),
+  ]);
+
   const [
     totalMatriculas,
     totalOfertasEscolas,
@@ -286,14 +343,24 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
     taxaAbandonoPonderada,
     taxaAnalfabetismoMedia,
   ] = await Promise.all([
-    aggregateCount(whereBase, 'Matrícula', params),
-    aggregateCount(whereBase, 'Escolas', params),
+    aggregateCount(whereBase, 'Matrícula', params, anoReferenciaMatriculas),
+    aggregateCount(whereBase, 'Escolas', params, anoReferenciaEscolas),
     aggregateRate(whereBase, 'Taxa de Aprovação', params),
     aggregateRate(whereBase, 'Taxa de Abandono', params),
     aggregateRate(whereBase, 'Taxa de Analfabetismo', params),
   ]);
 
-  // Variação de Matrículas
+  // Scope metadata for card descriptions
+  const qtdMunicipios =
+    params.municipios && params.municipios.length > 0 ? params.municipios.length : 0;
+  const redeFiltrada =
+    params.rede && params.rede !== 'Todas' && params.rede !== 'Todos' ? params.rede : 'Total';
+  const etapaFiltrada =
+    params.etapa && params.etapa !== 'Todas' && params.etapa !== 'Todos'
+      ? params.etapa
+      : 'Todas as etapas';
+
+  // Variação de Matrículas (comparing first vs last available year overall)
   const whereMatricula = {
     ...whereBase,
     variavel: 'Matrícula',
@@ -334,6 +401,11 @@ export async function getIndicadores(params: FilterParams): Promise<IndicadoresR
     taxaAnalfabetismoMedia,
     variacaoMatriculas,
     periodoReferencia,
+    anoReferenciaMatriculas: anoReferenciaMatriculas ?? null,
+    anoReferenciaEscolas: anoReferenciaEscolas ?? null,
+    qtdMunicipios,
+    redeFiltrada,
+    etapaFiltrada,
   };
 }
 
@@ -375,11 +447,32 @@ export async function getRanking(
 ): Promise<RankingItem[]> {
   const whereBase = buildWhereClause(params);
   const isRate = params.variavel.startsWith('Taxa');
+  const isStock = !isRate && (params.variavel === 'Matrícula' || params.variavel === 'Escolas');
 
-  // Se nenhum ano for especificado nos filtros, utiliza o ano máximo da variável
-  if (whereBase.ano === undefined && params.anoInicio === undefined && params.anoFim === undefined) {
-    const anoMax = await getAnoMaximo(params.variavel);
-    if (anoMax !== undefined) whereBase.ano = anoMax;
+  // For stock variables, pin to a single reference year (latest available in range)
+  let anoRefEstoque: number | undefined;
+  if (isStock) {
+    if (whereBase.ano !== undefined) {
+      // Single year already fixed by buildWhereClause — no pinning needed
+      anoRefEstoque = undefined;
+    } else {
+      anoRefEstoque = await getAnoReferenciaEstoque(whereBase, params.variavel, params);
+      if (anoRefEstoque !== undefined) {
+        whereBase.ano = anoRefEstoque;
+      }
+    }
+  } else if (!isRate) {
+    // Non-stock count variables: fall back to latest year when no year filter
+    if (whereBase.ano === undefined && params.anoInicio === undefined && params.anoFim === undefined) {
+      const anoMax = await getAnoMaximo(params.variavel);
+      if (anoMax !== undefined) whereBase.ano = anoMax;
+    }
+  } else {
+    // Rate variables: if no year specified, use latest
+    if (whereBase.ano === undefined && params.anoInicio === undefined && params.anoFim === undefined) {
+      const anoMax = await getAnoMaximo(params.variavel);
+      if (anoMax !== undefined) whereBase.ano = anoMax;
+    }
   }
 
   const municipiosRaw = await prisma.medida.findMany({
@@ -394,7 +487,7 @@ export async function getRanking(
       const paramsMun = { ...params, municipios: [m.co_mun] };
       const valor = isRate
         ? await aggregateRate(whereMun, params.variavel, paramsMun)
-        : await aggregateCount(whereMun, params.variavel, paramsMun);
+        : await aggregateCount(whereMun, params.variavel, paramsMun, anoRefEstoque);
 
       return valor !== null ? { co_mun: m.co_mun, no_mun: m.no_mun, valor } : null;
     })

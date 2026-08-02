@@ -24,15 +24,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
   const isCensoDemografico = VARIAVEIS_CENSO_DEMOGRAFICO.includes(filters.variavel ?? '');
 
   return (
-    <div className="bg-white border border-[#E5E0D7] rounded-2xl p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-5">
-      <div className="flex items-center justify-between border-b border-[#E5E0D7] pb-3.5">
-        <div className="flex items-center gap-2 text-sm font-serif font-medium text-[#0E3B3A]">
-          <Filter className="w-4 h-4 text-[#0E3B3A]" />
+    <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-5">
+      <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[#0F5237]">
+          <Filter className="w-4 h-4 text-[#0F5237]" />
           <span className="text-base tracking-tight">Filtros Globais do Dashboard</span>
         </div>
         <button
           onClick={onReset}
-          className="flex items-center gap-1.5 text-xs text-[#6E6A63] hover:text-[#0E3B3A] hover:bg-[#F2EDE4] transition px-3 py-1.5 rounded-lg border border-[#E5E0D7] bg-[#FAF8F5]"
+          className="flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#0F5237] hover:bg-[#F1F5F9] transition px-3 py-1.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAF9]"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Limpar Filtros</span>
@@ -41,8 +41,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
 
       {/* Aviso quando variável do censo demográfico está selecionada */}
       {isCensoDemografico && (
-        <div className="flex items-start gap-2.5 bg-[#FAF3E5] border border-[#E8D7B5] rounded-xl px-4 py-3 text-xs text-[#7A5416]">
-          <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#B88228]" />
+        <div className="flex items-start gap-2.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-4 py-3 text-xs text-[#92400E]">
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#B45309]" />
           <span>
             O indicador <strong>"{filters.variavel}"</strong> é proveniente do Censo Demográfico
             (IBGE) e representa a população de 15 anos ou mais de idade. Os filtros{' '}
@@ -55,14 +55,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* 1. Indicador / Variável */}
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] mb-1.5 flex items-center gap-1.5">
-            <BarChart2 className="w-3.5 h-3.5 text-[#0E3B3A]" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1.5">
+            <BarChart2 className="w-3.5 h-3.5 text-[#0F5237]" />
             <span>Indicador Principal</span>
           </label>
           <select
             value={filters.variavel}
             onChange={(e) => onChange({ variavel: e.target.value })}
-            className="w-full bg-[#FAF8F5] border border-[#E5E0D7] focus:border-[#0E3B3A] rounded-xl px-3 py-2 text-sm text-[#1C2B26] focus:outline-none focus:ring-1 focus:ring-[#0E3B3A] transition shadow-xs"
+            className="w-full bg-[#F8FAF9] border border-[#E2E8F0] focus:border-[#0F5237] rounded-xl px-3 py-2 text-sm text-[#1E293B] focus:outline-none focus:ring-1 focus:ring-[#0F5237] transition shadow-xs"
           >
             {options.variaveis.map((v) => (
               <option key={v} value={v}>
@@ -74,8 +74,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
 
         {/* 2. Município */}
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] mb-1.5 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-[#0E3B3A]" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-[#0F5237]" />
             <span>Município</span>
           </label>
           <select
@@ -84,7 +84,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
               const val = e.target.value;
               onChange({ municipios: val ? [val] : [] });
             }}
-            className="w-full bg-[#FAF8F5] border border-[#E5E0D7] focus:border-[#0E3B3A] rounded-xl px-3 py-2 text-sm text-[#1C2B26] focus:outline-none focus:ring-1 focus:ring-[#0E3B3A] transition shadow-xs"
+            className="w-full bg-[#F8FAF9] border border-[#E2E8F0] focus:border-[#0F5237] rounded-xl px-3 py-2 text-sm text-[#1E293B] focus:outline-none focus:ring-1 focus:ring-[#0F5237] transition shadow-xs"
           >
             <option value="">
               Todos os Municípios{options.municipios.length > 0 ? ` (${options.municipios.length})` : ''}
@@ -99,18 +99,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
 
         {/* 3. Rede de Ensino — desabilitado para variáveis do censo demográfico */}
         <div className={isCensoDemografico ? 'opacity-40 pointer-events-none' : ''}>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] mb-1.5 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-[#0E3B3A]" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-[#0F5237]" />
             <span>Rede de Ensino</span>
             {isCensoDemografico && (
-              <span className="text-[#B88228] text-[10px] font-normal lowercase">(não aplicável)</span>
+              <span className="text-[#B45309] text-[10px] font-normal lowercase">(não aplicável)</span>
             )}
           </label>
           <select
             value={isCensoDemografico ? 'Não se aplica' : filters.rede || 'Todos'}
             onChange={(e) => onChange({ rede: e.target.value })}
             disabled={isCensoDemografico}
-            className="w-full bg-[#FAF8F5] border border-[#E5E0D7] focus:border-[#0E3B3A] rounded-xl px-3 py-2 text-sm text-[#1C2B26] focus:outline-none focus:ring-1 focus:ring-[#0E3B3A] transition disabled:cursor-not-allowed shadow-xs"
+            className="w-full bg-[#F8FAF9] border border-[#E2E8F0] focus:border-[#0F5237] rounded-xl px-3 py-2 text-sm text-[#1E293B] focus:outline-none focus:ring-1 focus:ring-[#0F5237] transition disabled:cursor-not-allowed shadow-xs"
           >
             {isCensoDemografico ? (
               <option value="Não se aplica">Não se aplica</option>
@@ -129,18 +129,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
 
         {/* 4. Etapa de Ensino — desabilitado para variáveis do censo demográfico */}
         <div className={isCensoDemografico ? 'opacity-40 pointer-events-none' : ''}>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] mb-1.5 flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-[#0E3B3A]" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5 text-[#0F5237]" />
             <span>Etapa de Ensino</span>
             {isCensoDemografico && (
-              <span className="text-[#B88228] text-[10px] font-normal lowercase">(não aplicável)</span>
+              <span className="text-[#B45309] text-[10px] font-normal lowercase">(não aplicável)</span>
             )}
           </label>
           <select
             value={isCensoDemografico ? 'Pessoas de 15 anos ou mais de idade' : filters.etapa || 'Todas'}
             onChange={(e) => onChange({ etapa: e.target.value })}
             disabled={isCensoDemografico}
-            className="w-full bg-[#FAF8F5] border border-[#E5E0D7] focus:border-[#0E3B3A] rounded-xl px-3 py-2 text-sm text-[#1C2B26] focus:outline-none focus:ring-1 focus:ring-[#0E3B3A] transition disabled:cursor-not-allowed shadow-xs"
+            className="w-full bg-[#F8FAF9] border border-[#E2E8F0] focus:border-[#0F5237] rounded-xl px-3 py-2 text-sm text-[#1E293B] focus:outline-none focus:ring-1 focus:ring-[#0F5237] transition disabled:cursor-not-allowed shadow-xs"
           >
             {isCensoDemografico ? (
               <option value="Pessoas de 15 anos ou mais de idade">
@@ -161,8 +161,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
 
         {/* 5. Intervalo de Anos */}
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] mb-1.5 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-[#0E3B3A]" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1.5 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#0F5237]" />
             <span>Ano / Intervalo</span>
           </label>
           <div className="flex items-center gap-2">
@@ -171,11 +171,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
               onChange={(e) =>
                 onChange({ anoInicio: e.target.value ? parseInt(e.target.value, 10) : undefined })
               }
-              className={`w-full bg-[#FAF8F5] border ${
+              className={`w-full bg-[#F8FAF9] border ${
                 filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim
                   ? 'border-rose-400 focus:ring-rose-400'
-                  : 'border-[#E5E0D7] focus:ring-[#0E3B3A] focus:border-[#0E3B3A]'
-              } rounded-xl px-2.5 py-2 text-xs text-[#1C2B26] focus:outline-none focus:ring-1 transition shadow-xs`}
+                  : 'border-[#E2E8F0] focus:ring-[#0F5237] focus:border-[#0F5237]'
+              } rounded-xl px-2.5 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-1 transition shadow-xs`}
             >
               <option value="">Início</option>
               {options.anos.map((a) => (
@@ -184,17 +184,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({ options, filters, onChange
                 </option>
               ))}
             </select>
-            <span className="text-[#6E6A63] text-xs">até</span>
+            <span className="text-[#64748B] text-xs">até</span>
             <select
               value={filters.anoFim || ''}
               onChange={(e) =>
                 onChange({ anoFim: e.target.value ? parseInt(e.target.value, 10) : undefined })
               }
-              className={`w-full bg-[#FAF8F5] border ${
+              className={`w-full bg-[#F8FAF9] border ${
                 filters.anoInicio !== undefined && filters.anoFim !== undefined && filters.anoInicio > filters.anoFim
                   ? 'border-rose-400 focus:ring-rose-400'
-                  : 'border-[#E5E0D7] focus:ring-[#0E3B3A] focus:border-[#0E3B3A]'
-              } rounded-xl px-2.5 py-2 text-xs text-[#1C2B26] focus:outline-none focus:ring-1 transition shadow-xs`}
+                  : 'border-[#E2E8F0] focus:ring-[#0F5237] focus:border-[#0F5237]'
+              } rounded-xl px-2.5 py-2 text-xs text-[#1E293B] focus:outline-none focus:ring-1 transition shadow-xs`}
             >
               <option value="">Fim</option>
               {options.anos.map((a) => (

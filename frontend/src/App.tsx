@@ -176,14 +176,29 @@ export function App() {
     setPagina(1);
   };
 
-  const handleUploadSuccess = () => {
-    loadOptions();
-    loadDashboardData();
-    loadTabelaData();
+  const handleUploadSuccess = async () => {
+    try {
+      const opts = await fetchFiltros();
+      setFiltrosOptions(opts);
+      setFilters({
+        municipios: [],
+        anoInicio: undefined,
+        anoFim: undefined,
+        rede: undefined,
+        etapa: undefined,
+        variavel: opts.variaveis[0] ?? 'Matrícula',
+      });
+      setPagina(1);
+    } catch (err) {
+      console.error('Erro ao atualizar filtros após upload:', err);
+      loadOptions();
+      loadDashboardData();
+      loadTabelaData();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F0] text-[#1C2B26] flex flex-col font-sans selection:bg-[#0E3B3A] selection:text-white">
+    <div className="min-h-screen bg-[#F7F5F0] text-[#1E293B] flex flex-col font-sans selection:bg-[#0F5237] selection:text-white">
       <Header
         onOpenUpload={() => setIsUploadOpen(true)}
         totalRows={filtrosOptions.totalMedidas}
@@ -192,11 +207,11 @@ export function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
         {errorMsg && (
-          <div className="p-4 bg-[#FAF3E5] border border-[#E8D7B5] rounded-2xl text-[#7A5416] text-xs sm:text-sm flex items-center justify-between shadow-xs">
+          <div className="p-4 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl text-[#92400E] text-xs sm:text-sm flex items-center justify-between shadow-xs">
             <span>{errorMsg}</span>
             <button
               onClick={() => setIsUploadOpen(true)}
-              className="px-3.5 py-1.5 bg-[#0E3B3A] hover:bg-[#092B2A] text-white text-xs uppercase tracking-wider font-medium rounded-lg transition"
+              className="px-3.5 py-1.5 bg-[#0F5237] hover:bg-[#0B412B] text-white text-xs uppercase tracking-wider font-medium rounded-lg transition"
             >
               Fazer Upload CSV
             </button>
@@ -243,7 +258,7 @@ export function App() {
         />
       </main>
 
-      <footer className="bg-[#EFECE4] border-t border-[#E5E0D7] py-6 text-center text-xs text-[#6E6A63] font-sans">
+      <footer className="bg-[#E2E8F0]/60 border-t border-[#E2E8F0] py-6 text-center text-xs text-[#64748B] font-sans">
         Painel de Indicadores Educacionais de Alagoas — Desafio Técnico Full-Stack (React, Node.js, Express, TypeScript & Prisma)
       </footer>
 

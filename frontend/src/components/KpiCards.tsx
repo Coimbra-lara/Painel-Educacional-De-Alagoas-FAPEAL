@@ -15,10 +15,11 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading, etapa }) => {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white border border-[#E5E0D7] rounded-2xl p-6 animate-pulse h-36 flex flex-col justify-between">
-            <div className="h-4 bg-[#F2EDE4] rounded w-1/2"></div>
-            <div className="h-8 bg-[#F2EDE4] rounded w-3/4"></div>
-            <div className="h-3 bg-[#F2EDE4] rounded w-1/3"></div>
+          <div key={i} className="bg-white border border-[#E2E8F0] rounded-2xl p-6 animate-pulse h-40 flex flex-col justify-between">
+            <div className="h-4 bg-[#F1F5F9] rounded w-1/2"></div>
+            <div className="h-8 bg-[#F1F5F9] rounded w-3/4"></div>
+            <div className="h-3 bg-[#F1F5F9] rounded w-full"></div>
+            <div className="h-3 bg-[#F1F5F9] rounded w-2/3"></div>
           </div>
         ))}
       </div>
@@ -31,51 +32,65 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading, etapa }) => {
     ['Educação Infantil', 'EJA', 'Educação Profissional', 'EJA - Educação de Jovens e Adultos'].includes(etapa);
 
   const periodoReferencia = data?.periodoReferencia ?? null;
+  const anoRefMatriculas = data?.anoReferenciaMatriculas ?? null;
+  const anoRefEscolas = data?.anoReferenciaEscolas ?? null;
+  const qtdMun = data?.qtdMunicipios ?? 0;
+  const rede = data?.redeFiltrada ?? 'Total';
+  const etapaLabel = data?.etapaFiltrada ?? 'Todas as etapas';
+  const scopeLabel = `${qtdMun === 0 ? 'Todos os' : qtdMun} município(s) | Rede: ${rede} | ${etapaLabel}`;
 
   const cards = [
     {
       title: 'Total de Matrículas',
       rawValue: data?.totalMatriculas,
       value: formatNumber(data?.totalMatriculas),
-      subtitle: 'Alunos matriculados no recorte',
+      anoRef: anoRefMatriculas,
+      subtitle: anoRefMatriculas
+        ? `Contagem no recorte — ano de referência: ${anoRefMatriculas}`
+        : 'Contagem no recorte selecionado',
+      methodology: `Soma de alunos matriculados filtrada pela rede "${rede}" para evitar dupla contagem entre redes. Matrícula é uma medida de estoque (fotografia de um momento), por isso o valor exibido é sempre de um único ano de referência — o mais recente disponível no intervalo filtrado.`,
+      scopeLabel,
       icon: Users,
       badge: 'Filtrado por Total',
-      tooltip: 'Soma filtrada pela rede Total para evitar contagem triplicada de alunos',
       isRate: false,
-      periodo: null as string | null,
     },
     {
       title: 'Ofertas de Ensino',
       rawValue: data?.totalOfertasEscolas,
       value: formatNumber(data?.totalOfertasEscolas),
-      subtitle: 'Contagem de etapas por escola',
+      anoRef: anoRefEscolas,
+      subtitle: anoRefEscolas
+        ? `Contagem de ofertas — ano de referência: ${anoRefEscolas}`
+        : 'Contagem de ofertas no recorte',
+      methodology: `Soma de etapas por escola no ano de referência. Uma mesma escola que oferta Ensino Fundamental e Ensino Médio é contada duas vezes — este número representa "ofertas de ensino", não "escolas". Para obter a contagem real de escolas, selecione uma etapa específica no filtro.`,
+      scopeLabel,
       icon: School,
       badge: 'Ofertas em escolas',
-      tooltip: 'Escolas que oferecem mais de uma etapa são computadas em cada etapa ofertada',
       isRate: false,
-      periodo: null as string | null,
     },
     {
       title: 'Taxa de Aprovação',
       rawValue: data?.taxaAprovacaoPonderada,
       value: formatPercent(data?.taxaAprovacaoPonderada),
+      anoRef: null,
       subtitle: periodoReferencia ? `Período: ${periodoReferencia}` : 'Todos os anos disponíveis',
+      methodology: `Média ponderada por Matrículas: SUM(taxa × matrículas) / SUM(matrículas). Agrega todos os anos e municípios do intervalo filtrado. Taxas disponíveis apenas para Ensino Fundamental e Ensino Médio.`,
+      scopeLabel,
       icon: CheckCircle,
       badge: 'Ponderada por Matrículas',
-      tooltip: 'Fórmula: SUM(taxa × matrículas) / SUM(matrículas) — agrega todos os anos do intervalo filtrado',
       isRate: true,
-      periodo: periodoReferencia,
     },
     {
       title: 'Taxa de Abandono',
       rawValue: data?.taxaAbandonoPonderada,
       value: formatPercent(data?.taxaAbandonoPonderada),
+      anoRef: null,
       subtitle: periodoReferencia ? `Período: ${periodoReferencia}` : 'Todos os anos disponíveis',
+      methodology: `Média ponderada por Matrículas: SUM(taxa × matrículas) / SUM(matrículas). Agrega todos os anos e municípios do intervalo filtrado. Taxas disponíveis apenas para Ensino Fundamental e Ensino Médio.`,
+      scopeLabel,
       icon: AlertTriangle,
       badge: 'Ponderada por Matrículas',
-      tooltip: 'Fórmula: SUM(taxa × matrículas) / SUM(matrículas) — agrega todos os anos do intervalo filtrado',
       isRate: true,
-      periodo: periodoReferencia,
     },
   ];
 
@@ -88,36 +103,42 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading, etapa }) => {
         return (
           <div
             key={idx}
-            className="bg-white hover:bg-[#FCFBF8] border border-[#E5E0D7] hover:border-[#D0C9BD] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 group relative overflow-hidden flex flex-col justify-between"
+            className="bg-white hover:bg-[#F8FAF9] border border-[#E2E8F0] hover:border-[#CBD5E1] rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 group relative overflow-hidden flex flex-col gap-2"
           >
-            <div className="flex items-center justify-between mb-3">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6E6A63] group-hover:text-[#0E3B3A] transition">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B] group-hover:text-[#0F5237] transition">
                   {card.title}
                 </span>
-                <div className="group/tooltip relative cursor-pointer text-[#8C867A] hover:text-[#0E3B3A]">
+                {/* Tooltip with full methodology */}
+                <div className="group/tooltip relative cursor-pointer text-[#94A3B8] hover:text-[#0F5237]">
                   <Info className="w-3.5 h-3.5" />
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 p-2.5 bg-[#1C2B26] border border-[#3D4E47] rounded-xl text-[11px] text-[#FAF8F5] shadow-xl z-20 pointer-events-none leading-relaxed">
-                    {card.tooltip}
+                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block w-64 p-3 bg-[#0F172A] border border-[#334155] rounded-xl text-[11px] text-[#F8FAFC] shadow-xl z-20 pointer-events-none leading-relaxed">
+                    <p className="font-semibold mb-1 text-white">Metodologia</p>
+                    <p className="text-[#CBD5E1]">{card.methodology}</p>
+                    <p className="mt-2 font-semibold text-white">Recorte atual</p>
+                    <p className="text-[#CBD5E1]">{card.scopeLabel}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-2.5 bg-[#F2EDE4] text-[#0E3B3A] border border-[#E2DDD3] rounded-xl group-hover:bg-[#0E3B3A] group-hover:text-white transition-colors duration-200 flex items-center justify-center">
+              <div className="p-2.5 bg-[#ECF7F0] text-[#0F5237] border border-[#D8EEE0] rounded-xl group-hover:bg-[#0F5237] group-hover:text-white transition-colors duration-200 flex items-center justify-center">
                 <Icon className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="text-3xl sm:text-4xl font-serif font-normal text-[#0E3B3A] tracking-tight my-2">
+            {/* Value */}
+            <div className="text-3xl sm:text-4xl font-semibold text-[#0F5237] tracking-tight">
               {isNull ? (
                 card.isRate && isNaoAplicavelEtapa ? (
-                  <span className="text-xs font-semibold text-[#855B18] bg-[#FAF3E5] border border-[#EADBBF] px-3 py-1 rounded-lg inline-flex items-center gap-1.5 font-sans">
-                    <Info className="w-3.5 h-3.5 shrink-0 text-[#B88228]" />
+                  <span className="text-xs font-semibold text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 rounded-lg inline-flex items-center gap-1.5 font-sans">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-[#B45309]" />
                     Não se aplica a {etapa}
                   </span>
                 ) : (
-                  <span className="text-xs font-medium text-[#6E6A63] bg-[#FAF8F5] border border-[#E5E0D7] px-3 py-1 rounded-lg inline-flex items-center gap-1.5 font-sans">
-                    <Info className="w-3.5 h-3.5 shrink-0 text-[#8C867A]" />
+                  <span className="text-xs font-medium text-[#64748B] bg-[#F8FAF9] border border-[#E2E8F0] px-3 py-1 rounded-lg inline-flex items-center gap-1.5 font-sans">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-[#94A3B8]" />
                     Sem dados no recorte
                   </span>
                 )
@@ -126,12 +147,27 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ data, loading, etapa }) => {
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-[#7A766F] pt-2 border-t border-[#F5F2EB] mt-1">
-              <span>{card.subtitle}</span>
-              <span className="px-2 py-0.5 bg-[#F2EDE4] border border-[#E2DDD3] rounded-md text-[10px] text-[#0E3B3A] font-mono font-medium">
+            {/* Reference year badge (for stock variables) */}
+            {card.anoRef !== null && (
+              <div className="flex">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF3C7] border border-[#FDE68A] rounded-md text-[10px] text-[#92400E] font-mono font-semibold">
+                  Ano Ref.: {card.anoRef}
+                </span>
+              </div>
+            )}
+
+            {/* Footer row */}
+            <div className="flex items-start justify-between text-xs text-[#64748B] pt-2 border-t border-[#F1F5F9] gap-2">
+              <span className="leading-snug">{card.subtitle}</span>
+              <span className="shrink-0 px-2 py-0.5 bg-[#ECF7F0] border border-[#D8EEE0] rounded-md text-[10px] text-[#0F5237] font-mono font-medium whitespace-nowrap">
                 {card.badge}
               </span>
             </div>
+
+            {/* Scope line */}
+            <p className="text-[10px] text-[#94A3B8] leading-snug">
+              {card.scopeLabel}
+            </p>
           </div>
         );
       })}

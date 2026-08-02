@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle2, AlertTriangle, FileText, Loader2 } from 'lucide-react';
 import { uploadCsv } from '../services/api.js';
 import { UploadReport } from '../types/index.js';
@@ -15,7 +15,25 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<UploadReport | null>(null);
 
+  // Clear modal state whenever the modal closes so it opens fresh every time
+  useEffect(() => {
+    if (!isOpen) {
+      setFile(null);
+      setLoading(false);
+      setError(null);
+      setReport(null);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setFile(null);
+    setLoading(false);
+    setError(null);
+    setReport(null);
+    onClose();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -50,33 +68,33 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C2B26]/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white border border-[#E5E0D7] rounded-2xl shadow-2xl max-w-lg w-full p-7 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl max-w-lg w-full p-7 relative overflow-hidden">
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[#6E6A63] hover:text-[#0E3B3A] p-1.5 rounded-lg hover:bg-[#F2EDE4] transition"
+          onClick={handleClose}
+          className="absolute top-4 right-4 text-[#64748B] hover:text-[#0F5237] p-1.5 rounded-lg hover:bg-[#F1F5F9] transition"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3.5 mb-6">
-          <div className="p-2.5 bg-[#F2EDE4] text-[#0E3B3A] border border-[#E2DDD3] rounded-xl flex items-center justify-center">
+          <div className="p-2.5 bg-[#ECF7F0] text-[#0F5237] border border-[#D8EEE0] rounded-xl flex items-center justify-center">
             <Upload className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="font-serif text-xl font-normal text-[#0E3B3A]">Importar Arquivo CSV</h2>
-            <p className="text-xs text-[#6E6A63] mt-0.5">Processamento transacional em streaming no servidor</p>
+            <h2 className="text-xl font-semibold text-[#0F5237]">Importar Arquivo CSV</h2>
+            <p className="text-xs text-[#64748B] mt-0.5">Processamento transacional em streaming no servidor</p>
           </div>
         </div>
 
         {!report ? (
           <div className="space-y-5">
-            <label className="border-2 border-dashed border-[#D5CFB6] hover:border-[#0E3B3A] rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-[#FAF8F3] hover:bg-[#F4F0E8] transition-all text-center group">
-              <FileText className="w-10 h-10 text-[#8C867A] group-hover:text-[#0E3B3A] mb-3 transition" />
-              <span className="text-sm font-medium text-[#1C2B26]">
+            <label className="border-2 border-dashed border-[#CBD5E1] hover:border-[#0F5237] rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-[#F8FAF9] hover:bg-[#ECF7F0]/60 transition-all text-center group">
+              <FileText className="w-10 h-10 text-[#94A3B8] group-hover:text-[#0F5237] mb-3 transition" />
+              <span className="text-sm font-medium text-[#1E293B]">
                 {file ? file.name : 'Clique ou arraste o arquivo CSV aqui'}
               </span>
-              <span className="text-xs text-[#6E6A63] mt-1">
+              <span className="text-xs text-[#64748B] mt-1">
                 {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Suporta de 3.500 até 145.000+ linhas'}
               </span>
               <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
@@ -91,9 +109,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
 
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={loading}
-                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#6E6A63] hover:text-[#0E3B3A] hover:bg-[#F2EDE4] rounded-lg transition"
+                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#64748B] hover:text-[#0F5237] hover:bg-[#F1F5F9] rounded-lg transition"
               >
                 Cancelar
               </button>
@@ -101,7 +119,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
               <button
                 onClick={handleUpload}
                 disabled={!file || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#0E3B3A] hover:bg-[#092B2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0F5237] hover:bg-[#0B412B] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
               >
                 {loading ? (
                   <>
@@ -119,35 +137,49 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
           </div>
         ) : (
           <div className="space-y-5 animate-fade-in">
-            <div className="p-4 bg-[#EBF4EE] border border-[#C6E2D1] rounded-xl flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-[#1A5336] shrink-0" />
+            <div className="p-4 bg-[#ECF7F0] border border-[#D8EEE0] rounded-xl flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-[#0F5237] shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-[#1A5336]">Importação Concluída com Sucesso!</h3>
-                <p className="text-xs text-[#2A6647] mt-0.5">Os dados foram armazenados no banco de dados.</p>
+                <h3 className="text-sm font-semibold text-[#0F5237]">Importação Concluída com Sucesso!</h3>
+                <p className="text-xs text-[#0B412B] mt-0.5">Os dados foram armazenados no banco de dados.</p>
               </div>
             </div>
 
+            {report.duplicados && report.duplicados > 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-3 text-amber-900">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-950">
+                    Arquivo contém dados duplicados. Os registros duplicados não foram importados.
+                  </h3>
+                  <p className="text-xs text-amber-800 mt-1 font-medium">
+                    Quantidade de duplicados encontrados: {report.duplicados.toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
-                <div className="text-xl font-serif font-normal text-[#1C2B26]">{report.linhasLidas.toLocaleString('pt-BR')}</div>
-                <div className="text-[10px] text-[#6E6A63] font-mono uppercase tracking-wider mt-0.5">Lidas</div>
+              <div className="p-3.5 bg-[#F8FAF9] rounded-xl border border-[#E2E8F0]">
+                <div className="text-xl font-semibold text-[#1E293B]">{report.linhasLidas.toLocaleString('pt-BR')}</div>
+                <div className="text-[10px] text-[#64748B] font-mono uppercase tracking-wider mt-0.5">Lidas</div>
               </div>
-              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
-                <div className="text-xl font-serif font-semibold text-[#1A5336]">{report.linhasImportadas.toLocaleString('pt-BR')}</div>
-                <div className="text-[10px] text-[#1A5336] font-mono uppercase tracking-wider mt-0.5">Importadas</div>
+              <div className="p-3.5 bg-[#F8FAF9] rounded-xl border border-[#E2E8F0]">
+                <div className="text-xl font-semibold text-[#0F5237]">{report.linhasImportadas.toLocaleString('pt-BR')}</div>
+                <div className="text-[10px] text-[#0F5237] font-mono uppercase tracking-wider mt-0.5">Importadas</div>
               </div>
-              <div className="p-3.5 bg-[#FAF8F3] rounded-xl border border-[#E5E0D7]">
-                <div className="text-xl font-serif font-semibold text-[#902A20]">{report.linhasRejeitadas.toLocaleString('pt-BR')}</div>
+              <div className="p-3.5 bg-[#F8FAF9] rounded-xl border border-[#E2E8F0]">
+                <div className="text-xl font-semibold text-[#902A20]">{report.linhasRejeitadas.toLocaleString('pt-BR')}</div>
                 <div className="text-[10px] text-[#902A20] font-mono uppercase tracking-wider mt-0.5">Rejeitadas</div>
               </div>
             </div>
 
             {report.erros && report.erros.length > 0 && (
               <div className="mt-3">
-                <h4 className="text-xs font-semibold text-[#1C2B26] mb-2">Linhas com Inconsistências ({report.erros.length}):</h4>
-                <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs text-[#6E6A63] font-mono">
+                <h4 className="text-xs font-semibold text-[#1E293B] mb-2">Linhas com Inconsistências ({report.erros.length}):</h4>
+                <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs text-[#64748B] font-mono">
                   {report.erros.map((err, idx) => (
-                    <div key={idx} className="p-2 bg-[#FAF8F3] rounded border border-[#E5E0D7]">
+                    <div key={idx} className="p-2 bg-[#F8FAF9] rounded border border-[#E2E8F0]">
                       Linha {err.linha}: {err.motivo}
                     </div>
                   ))}
@@ -157,8 +189,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
 
             <div className="flex justify-end pt-2">
               <button
-                onClick={onClose}
-                className="px-5 py-2.5 bg-[#0E3B3A] hover:bg-[#092B2A] text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
+                onClick={handleClose}
+                className="px-5 py-2.5 bg-[#0F5237] hover:bg-[#0B412B] text-white font-medium text-xs uppercase tracking-wider rounded-lg shadow-xs transition"
               >
                 Concluir & Fechar
               </button>

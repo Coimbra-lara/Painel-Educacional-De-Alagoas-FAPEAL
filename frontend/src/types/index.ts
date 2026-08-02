@@ -31,6 +31,15 @@ export interface IndicadoresData {
   variacaoMatriculas: number | null;
   /** Label of the period used for weighted rate cards (e.g. "2010–2021" or "2023"). Null = all years. */
   periodoReferencia: string | null;
+  /** Reference year used for stock cards — the latest available year in the filtered range */
+  anoReferenciaMatriculas: number | null;
+  anoReferenciaEscolas: number | null;
+  /** How many municipalities are in the current filter scope (0 = all) */
+  qtdMunicipios: number;
+  /** The network filter applied ("Total" if no specific network is selected) */
+  redeFiltrada: string;
+  /** The stage filter applied ("Todas as etapas" if none) */
+  etapaFiltrada: string;
 }
 
 export interface SerieItem {
@@ -74,4 +83,6 @@ export interface UploadReport {
   linhasImportadas: number;
   linhasRejeitadas: number;
   erros: { linha: number; motivo: string }[];
+  duplicados?: number;
+  mensagem?: string;
 }

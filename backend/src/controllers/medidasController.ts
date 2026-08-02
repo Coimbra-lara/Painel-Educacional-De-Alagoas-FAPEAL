@@ -64,10 +64,17 @@ function parseQueryParams(req: Request) {
 }
 
 // POST /api/upload
-medidasRouter.post(
-  '/upload',
-  upload.single('file'),
-  async (req: Request, res: Response, next: NextFunction) => {
+medidasRouter.post('/upload', (req: Request, res: Response, next: NextFunction) => {
+  upload.single('file')(req, res, async (err: any) => {
+    if (err) {
+      return res.status(400).json({
+        error: {
+          code: 'INVALID_FILE',
+          message: err.message || 'Erro no envio do arquivo',
+        },
+      });
+    }
+
     try {
       if (!req.file) {
         return res.status(400).json({ error: { code: 'FILE_REQUIRED', message: 'Nenhum arquivo CSV enviado' } });
@@ -83,8 +90,8 @@ medidasRouter.post(
     } catch (error: any) {
       return res.status(400).json({ error: { code: 'INVALID_CSV', message: error.message || 'Erro ao processar CSV' } });
     }
-  }
-);
+  });
+});
 
 // GET /api/filtros
 medidasRouter.get('/filtros', async (req: Request, res: Response, next: NextFunction) => {

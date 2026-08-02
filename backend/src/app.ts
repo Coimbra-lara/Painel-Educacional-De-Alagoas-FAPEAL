@@ -29,6 +29,16 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api', medidasRouter);
 
+// Serve Frontend Static Files (if dist exists)
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
+
 // Centralized Error Middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.statusCode || err.status || 500;
